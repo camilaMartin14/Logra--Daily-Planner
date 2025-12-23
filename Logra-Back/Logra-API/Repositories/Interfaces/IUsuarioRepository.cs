@@ -7,6 +7,5 @@ namespace Logra_API.Repositories.Interfaces
         int RegistrarUsuario(Usuario usuario);
         Usuario? ObtenerUsuarioPorId(int idUsuario);
         Usuario? ObtenerUsuarioPorEmail(string email);
-        bool ValidarCredenciales(string email, string passwordHash);
     }
 }

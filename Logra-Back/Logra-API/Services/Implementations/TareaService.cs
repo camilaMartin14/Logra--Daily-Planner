@@ -13,7 +13,7 @@ namespace Logra_API.Services.Implementations
             _repo = repo;
         }
 
-        public int CrearTarea(int diaId, TareaDTO dto)
+        public int CrearTarea(int diaId, TareaCreateDTO dto)
         {
             var tarea = new Tarea
             {
@@ -46,6 +46,7 @@ namespace Logra_API.Services.Implementations
 
             return new TareaDTO
             {
+                Id = tarea.Id,
                 Descripcion = tarea.Descripcion,
                 Realizada = tarea.Realizada
             };
@@ -56,6 +57,7 @@ namespace Logra_API.Services.Implementations
             return _repo.ObtenerTareasPorDia(diaId)
                 .Select(t => new TareaDTO
                 {
+                    Id = t.Id,
                     Descripcion = t.Descripcion,
                     Realizada = t.Realizada
                 })

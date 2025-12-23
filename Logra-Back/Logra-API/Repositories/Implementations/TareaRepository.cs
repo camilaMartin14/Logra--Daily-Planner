@@ -44,8 +44,7 @@ namespace Logra_API.Repositories.Implementations
 
         public Tarea? ObtenerTareaPorId(int idTarea)
         {
-            return _context.Tareas
-                .FirstOrDefault(t => t.Id == idTarea);
+            return _context.Tareas.Find(idTarea);
         }
 
         public List<Tarea> ObtenerTareasPorDia(int diaId)

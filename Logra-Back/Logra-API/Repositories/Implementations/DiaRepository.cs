@@ -20,28 +20,14 @@ namespace Logra_API.Repositories.Implementations
 
         public bool ModificarDia(Dia dia)
         {
-            var diaExistente = _context.Dias.Find(dia.Id);
-            if (diaExistente == null)
-                return false;
-
-            diaExistente.Mood = dia.Mood;
-            diaExistente.NotaDia = dia.NotaDia;
-            diaExistente.NotaManiana = dia.NotaManiana;
-            diaExistente.AguaConsumida = dia.AguaConsumida;
-            diaExistente.HorasSueno = dia.HorasSueno;
-            diaExistente.Desayuno = dia.Desayuno;
-            diaExistente.Almuerzo = dia.Almuerzo;
-            diaExistente.Cena = dia.Cena;
-            diaExistente.Snack = dia.Snack;
-
+            _context.Dias.Update(dia);
             _context.SaveChanges();
             return true;
         }
 
         public Dia? ObtenerDiaPorId(int idDia)
         {
-            return _context.Dias
-                .FirstOrDefault(d => d.Id == idDia);
+            return _context.Dias.Find(idDia);
         }
 
         public Dia? ObtenerDiaPorUsuarioYFecha(int usuarioId, DateOnly fecha)

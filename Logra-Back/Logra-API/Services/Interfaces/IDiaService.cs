@@ -7,6 +7,6 @@ namespace Logra_API.Services.Interfaces
     {
         DiaDTO ObtenerOCrearDia(int usuarioId, DateOnly fecha);
         DiaDTO? ObtenerDiaPorId(int idDia);
-        bool ModificarDia(int idDia, DiaDTO diaDto);
+        bool ModificarDia(int idDia, DiaDTO dto);
     }
 }

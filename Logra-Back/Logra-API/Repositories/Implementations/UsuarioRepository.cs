@@ -19,8 +19,7 @@ namespace Logra_API.Repositories.Implementations
 
         public Usuario? ObtenerUsuarioPorId(int idUsuario)
         {
-            return _context.Usuarios
-                .FirstOrDefault(u => u.Id == idUsuario);
+            return _context.Usuarios.Find(idUsuario);
         }
 
         public int RegistrarUsuario(Usuario usuario)
@@ -28,12 +27,6 @@ namespace Logra_API.Repositories.Implementations
             _context.Usuarios.Add(usuario);
             _context.SaveChanges();
             return usuario.Id;
-        }
-
-        public bool ValidarCredenciales(string email, string passwordHash)
-        {
-            return _context.Usuarios
-                .Any(u => u.Email == email && u.ContraseniaHash == passwordHash);
         }
     }
 }
