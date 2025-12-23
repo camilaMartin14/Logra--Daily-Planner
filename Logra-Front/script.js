@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Configuration & Constants ---
     const STORAGE_KEY = 'logra_db';
     const MOOD_MAP = {
         'happy': '¡Me siento feliz!',
@@ -7,12 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
         'sad': 'Mañana será mejor.'
     };
 
-    // --- State Management ---
     let currentDate = new Date();
     let currentDayData = getEmptyDayData();
-    let currentFilter = 'all'; // 'all', 'pending', 'completed'
+    let currentFilter = 'all'; 
 
-    // --- DOM Elements ---
     const els = {
         currentDate: document.getElementById('current-date'),
         dayStatus: document.getElementById('day-status-indicator'),
@@ -31,24 +28,21 @@ document.addEventListener('DOMContentLoaded', () => {
         moodText: document.getElementById('selected-mood-text'),
         dailyNote: document.getElementById('daily-note'),
         tomorrowNote: document.getElementById('tomorrow-note'),
-        contentWrapper: document.querySelector('.content-wrapper')
+        contentWrapper: document.querySelector('.content-wrapper'),
+        // New elements
+        hydrationContainer: document.getElementById('hydration-container'),
+        sleepContainer: document.getElementById('sleep-container'),
+        mealInputs: {
+            breakfast: document.getElementById('meal-breakfast'),
+            lunch: document.getElementById('meal-lunch'),
+            dinner: document.getElementById('meal-dinner'),
+            snack: document.getElementById('meal-snack')
+        }
     };
 
-    // --- Initialization ---
-    init();
-
-    async function init() {
-        setupEventListeners();
-        await loadDay(currentDate);
-    }
-
-    // --- Data Manager (Simulating API) ---
-    // In a real app, these would be fetch() calls to a backend.
     
     const DataManager = {
         async getDay(dateStr) {
-            // Simulate network delay
-            // await new Promise(r => setTimeout(r, 100));
             
             const db = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
             return db[dateStr] || null;
@@ -61,11 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Date Logic ---
 
     function getFormattedDateKey(date) {
-        // Returns YYYY-MM-DD
-        return date.toISOString().split('T')[0];
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     function getDisplayDate(date) {
@@ -85,11 +80,18 @@ document.addEventListener('DOMContentLoaded', () => {
             tasks: [],
             mood: null,
             dailyNote: '',
-            tomorrowNote: ''
+            tomorrowNote: '',
+            hydration: 0,
+            sleep: 0,
+            meals: {
+                breakfast: '',
+                lunch: '',
+                dinner: '',
+                snack: ''
+            }
         };
     }
 
-    // --- Core Logic ---
 
     async function loadDay(date) {
         const dateKey = getFormattedDateKey(date);
@@ -103,8 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function saveCurrentDay() {
         const dateKey = getFormattedDateKey(currentDate);
         await DataManager.saveDay(dateKey, currentDayData);
-        // We don't re-render everything on save to avoid losing focus, 
-        // but we might update stats.
         updateStats();
     }
 
@@ -113,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
         newDate.setDate(currentDate.getDate() + offset);
         currentDate = newDate;
         
-        // Add fade out effect could go here
         loadDay(currentDate);
     }
 
@@ -123,12 +122,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateFilterUI();
     }
 
-    // --- Rendering ---
 
     function renderUI() {
         renderHeader();
         renderTasks();
         renderMood();
+        renderWellness();
+        renderMeals();
         renderNotes();
         updateStats();
         updateFilterUI();
@@ -155,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function applyDayStatusStyles() {
         const today = new Date();
-        // Reset time for accurate comparison
         today.setHours(0,0,0,0);
         const checkDate = new Date(currentDate);
         checkDate.setHours(0,0,0,0);
@@ -171,19 +170,15 @@ document.addEventListener('DOMContentLoaded', () => {
             els.taskInput.placeholder = "Planifica para el futuro...";
             disableInputs(false);
         } else {
-            // Today
             els.taskInput.placeholder = "Escribe una nueva tarea...";
             disableInputs(false);
         }
     }
 
     function disableInputs(disabled) {
-        // Only disable inputs within the main content wrapper, excluding modals
         const inputs = els.contentWrapper.querySelectorAll('input, textarea, select');
         inputs.forEach(i => i.disabled = disabled);
         
-        // Specific handling for buttons if needed, but CSS handles pointer-events
-        // We do strictly disable the task input to prevent enter key submission
         els.taskInput.disabled = disabled;
         els.addTaskBtn.disabled = disabled;
     }
@@ -191,7 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderTasks() {
         els.todoList.innerHTML = '';
 
-        // Filter tasks
         let visibleTasks = currentDayData.tasks;
         if (currentFilter === 'pending') {
             visibleTasks = currentDayData.tasks.filter(t => !t.completed);
@@ -200,9 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (visibleTasks.length === 0) {
-            // Show a different message based on filter? For now, standard empty state
             if (currentDayData.tasks.length > 0) {
-                 // Tasks exist but filtered out
                  const msg = document.createElement('div');
                  msg.className = 'text-center py-4 text-muted fst-italic';
                  msg.textContent = currentFilter === 'pending' ? '¡Todo completado!' : 'Aún no hay tareas completadas.';
@@ -218,8 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const li = document.createElement('li');
                 li.className = `list-group-item ${task.completed ? 'completed-task' : ''}`;
                 
-                // Note: We use global handlers for simplicity in this generated code,
-                // passing the ID.
                 li.innerHTML = `
                     <div class="d-flex align-items-center w-100">
                         <input class="form-check-input rounded-circle" type="checkbox" 
@@ -277,7 +267,38 @@ document.addEventListener('DOMContentLoaded', () => {
         els.tomorrowNote.value = currentDayData.tomorrowNote || '';
     }
 
-    // --- Action Handlers ---
+    function renderWellness() {
+        els.hydrationContainer.innerHTML = '';
+        for (let i = 1; i <= 8; i++) {
+            const btn = document.createElement('button');
+            const isActive = i <= (currentDayData.hydration || 0);
+            btn.className = `wellness-btn ${isActive ? 'active' : ''}`;
+            btn.innerHTML = `<i class="bi bi-cup-straw wellness-icon"></i>`;
+            btn.title = `${i} vaso${i !== 1 ? 's' : ''}`;
+            btn.onclick = () => handleHydrationClick(i);
+            els.hydrationContainer.appendChild(btn);
+        }
+
+        els.sleepContainer.innerHTML = '';
+        for (let i = 1; i <= 8; i++) {
+            const btn = document.createElement('button');
+            const isActive = i <= (currentDayData.sleep || 0);
+            btn.className = `wellness-btn ${isActive ? 'sleep-active' : ''}`;
+            btn.innerHTML = `<i class="bi bi-moon-stars-fill wellness-icon"></i>`;
+            btn.title = `${i} hora${i !== 1 ? 's' : ''}`;
+            btn.onclick = () => handleSleepClick(i);
+            els.sleepContainer.appendChild(btn);
+        }
+    }
+
+    function renderMeals() {
+        const meals = currentDayData.meals || { breakfast: '', lunch: '', dinner: '', snack: '' };
+        els.mealInputs.breakfast.value = meals.breakfast || '';
+        els.mealInputs.lunch.value = meals.lunch || '';
+        els.mealInputs.dinner.value = meals.dinner || '';
+        els.mealInputs.snack.value = meals.snack || '';
+    }
+
 
     function handleAddTask() {
         const text = els.taskInput.value.trim();
@@ -292,8 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentDayData.tasks.unshift(newTask);
         els.taskInput.value = '';
         
-        // If we add a task while in 'completed' filter, we should probably switch to 'all' or 'pending'
-        // or just accept it won't be seen immediately. Let's switch to 'all' for clarity.
         if (currentFilter === 'completed') {
             setFilter('all');
         }
@@ -320,27 +339,42 @@ document.addEventListener('DOMContentLoaded', () => {
         updateStats();
     };
 
-    // --- Event Listeners ---
+    function handleHydrationClick(count) {
+        if (els.contentWrapper.classList.contains('read-only-mode')) return;
+        
+        if (currentDayData.hydration === count) {
+            currentDayData.hydration = count - 1;
+        } else {
+            currentDayData.hydration = count;
+        }
+        saveCurrentDay();
+        renderWellness();
+    }
+
+    function handleSleepClick(count) {
+        if (els.contentWrapper.classList.contains('read-only-mode')) return;
+
+        currentDayData.sleep = count;
+        saveCurrentDay();
+        renderWellness();
+    }
+
 
     function setupEventListeners() {
-        // Navigation
         els.prevBtn.addEventListener('click', () => changeDate(-1));
         els.nextBtn.addEventListener('click', () => changeDate(1));
 
-        // Tasks
         els.addTaskBtn.addEventListener('click', handleAddTask);
         els.taskInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleAddTask();
         });
 
-        // Filters
         els.filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 setFilter(btn.dataset.filter);
             });
         });
 
-        // Mood
         els.moodBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const mood = btn.getAttribute('data-mood');
@@ -350,7 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Notes (Auto-save on input)
         els.dailyNote.addEventListener('input', (e) => {
             currentDayData.dailyNote = e.target.value;
             saveCurrentDay();
@@ -360,16 +393,22 @@ document.addEventListener('DOMContentLoaded', () => {
             currentDayData.tomorrowNote = e.target.value;
             saveCurrentDay();
         });
+
+        Object.keys(els.mealInputs).forEach(key => {
+            els.mealInputs[key].addEventListener('input', (e) => {
+                if (!currentDayData.meals) currentDayData.meals = {};
+                currentDayData.meals[key] = e.target.value;
+                saveCurrentDay();
+            });
+        });
     }
 
-    // --- Utilities ---
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 
-    // --- Password Toggle (kept from original) ---
     window.togglePassword = function(id) {
         const input = document.getElementById(id);
         const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -385,4 +424,11 @@ document.addEventListener('DOMContentLoaded', () => {
             icon.classList.add('bi-eye');
         }
     };
+
+    init();
+
+    async function init() {
+        setupEventListeners();
+        await loadDay(currentDate);
+    }
 });

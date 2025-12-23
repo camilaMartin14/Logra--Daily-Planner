@@ -39,3 +39,21 @@ CREATE TABLE tareas (
 );
 GO
 
+
+ALTER TABLE dias
+ADD aguaConsumida INT NOT NULL DEFAULT 0
+CHECK (aguaConsumida BETWEEN 0 AND 8);
+GO
+
+ALTER TABLE dias
+ADD horasSueno INT
+CHECK (horasSueno BETWEEN 0 AND 12);
+GO
+
+ALTER TABLE dias
+ADD desayuno VARCHAR(200),
+    almuerzo VARCHAR(200),
+    cena VARCHAR(200),
+    snack VARCHAR(200)
+GO
+
