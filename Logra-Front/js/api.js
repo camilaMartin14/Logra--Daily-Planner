@@ -33,5 +33,6 @@ async function apiFetch(url, options = {}) {
         throw new Error(msg);
     }
 
-    return response.status === 204 ? null : response.json();
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
 }

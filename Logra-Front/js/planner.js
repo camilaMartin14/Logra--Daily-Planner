@@ -37,7 +37,21 @@ document.addEventListener('DOMContentLoaded', () => {
             lunch: document.getElementById('meal-lunch'),
             dinner: document.getElementById('meal-dinner'),
             snack: document.getElementById('meal-snack')
-        }
+        },
+        // Auth UI
+        authTeaserLogin: document.getElementById('auth-teaser-login'),
+        authTeaserLogout: document.getElementById('auth-teaser-logout'),
+        userNameDisplay: document.getElementById('user-name-display'),
+        btnLogout: document.getElementById('btn-logout'),
+        authOnlyElements: document.querySelectorAll('.auth-only'),
+        // Save Buttons
+        btnSaveMeals: document.getElementById('btn-save-meals'),
+        btnSaveDailyNote: document.getElementById('btn-save-daily-note'),
+        btnSaveTomorrowNote: document.getElementById('btn-save-tomorrow-note'),
+        // Success Messages
+        msgSaveMeals: document.getElementById('msg-save-meals'),
+        msgSaveDailyNote: document.getElementById('msg-save-daily-note'),
+        msgSaveTomorrowNote: document.getElementById('msg-save-tomorrow-note')
     };
 
     
@@ -437,21 +451,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
         els.dailyNote.addEventListener('input', (e) => {
             currentDayData.dailyNote = e.target.value;
-            saveCurrentDay();
+            if (!authToken) saveCurrentDay();
         });
 
         els.tomorrowNote.addEventListener('input', (e) => {
             currentDayData.tomorrowNote = e.target.value;
-            saveCurrentDay();
+            if (!authToken) saveCurrentDay();
         });
 
         Object.keys(els.mealInputs).forEach(key => {
             els.mealInputs[key].addEventListener('input', (e) => {
                 if (!currentDayData.meals) currentDayData.meals = {};
                 currentDayData.meals[key] = e.target.value;
-                saveCurrentDay();
+                if (!authToken) saveCurrentDay();
             });
         });
+
+        // Auth Logic
+        if (els.btnLogout) {
+            els.btnLogout.addEventListener('click', () => {
+                clearToken();
+                localStorage.removeItem('logra_user_name');
+                location.reload();
+            });
+        }
+
+        // Manual Save Buttons (Auth only)
+        if (els.btnSaveMeals) {
+            els.btnSaveMeals.addEventListener('click', async () => {
+                await saveCurrentDay();
+                showSuccessMessage(els.msgSaveMeals);
+            });
+        }
+        if (els.btnSaveDailyNote) {
+            els.btnSaveDailyNote.addEventListener('click', async () => {
+                await saveCurrentDay();
+                showSuccessMessage(els.msgSaveDailyNote);
+            });
+        }
+        if (els.btnSaveTomorrowNote) {
+            els.btnSaveTomorrowNote.addEventListener('click', async () => {
+                await saveCurrentDay();
+                showSuccessMessage(els.msgSaveTomorrowNote);
+            });
+        }
+    }
+
+    function showSuccessMessage(el) {
+        if (!el) return;
+        el.style.opacity = '1';
+        setTimeout(() => {
+            el.style.opacity = '0';
+        }, 2000);
+    }
+
+    function updateAuthUI() {
+        if (authToken) {
+            // Logged In
+            els.authTeaserLogin.classList.add('d-none');
+            els.authTeaserLogout.classList.remove('d-none');
+            
+            const userName = localStorage.getItem('logra_user_name') || 'Usuario';
+            els.userNameDisplay.textContent = userName;
+
+            els.authOnlyElements.forEach(el => el.classList.remove('d-none'));
+        } else {
+            // Logged Out
+            els.authTeaserLogin.classList.remove('d-none');
+            els.authTeaserLogout.classList.add('d-none');
+            
+            els.authOnlyElements.forEach(el => el.classList.add('d-none'));
+        }
     }
 
     function escapeHtml(text) {
@@ -479,6 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
 
     async function init() {
+        updateAuthUI();
         setupEventListeners();
         await loadDay(currentDate);
     }
