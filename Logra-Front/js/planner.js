@@ -95,7 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadDay(date) {
         const dateKey = getFormattedDateKey(date);
-        const data = await DataManager.getDay(dateKey);
+        const data = authToken
+    ? await DayApi.obtenerOCrear(dateKey)
+    : await DataManager.getDay(dateKey);
         
         currentDayData = data ? data : getEmptyDayData();
         
@@ -103,10 +105,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveCurrentDay() {
+    if (!authToken) {
         const dateKey = getFormattedDateKey(currentDate);
         await DataManager.saveDay(dateKey, currentDayData);
         updateStats();
+        return;
     }
+
+    // usuario logueado → backend
+    await DayApi.actualizar(currentDayData.id, {
+        aguaConsumida: currentDayData.hydration,
+        horasSueno: currentDayData.sleep,
+        mood: currentDayData.mood,
+        notaDia: currentDayData.dailyNote,
+        notaManiana: currentDayData.tomorrowNote,
+        desayuno: currentDayData.meals.breakfast,
+        almuerzo: currentDayData.meals.lunch,
+        cena: currentDayData.meals.dinner,
+        snack: currentDayData.meals.snack
+    });
+}
+
 
     function changeDate(offset) {
         const newDate = new Date(currentDate);
@@ -300,44 +319,76 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    function handleAddTask() {
-        const text = els.taskInput.value.trim();
-        if (text === '') return;
+    async function handleAddTask() {
+    const text = els.taskInput.value.trim();
+    if (text === '') return;
 
-        const newTask = {
+    if (!authToken) {
+        // LOCAL
+        currentDayData.tasks.unshift({
             id: Date.now(),
-            text: text,
+            text,
             completed: false
-        };
-
-        currentDayData.tasks.unshift(newTask);
-        els.taskInput.value = '';
-        
-        if (currentFilter === 'completed') {
-            setFilter('all');
-        }
-
-        saveCurrentDay();
+        });
+        await saveCurrentDay();
         renderTasks();
         updateStats();
+        els.taskInput.value = '';
+        return;
     }
 
-    window.handleToggle = function(id) {
-        const task = currentDayData.tasks.find(t => t.id === id);
-        if (task) {
-            task.completed = !task.completed;
-            saveCurrentDay();
-            renderTasks();
-            updateStats();
-        }
-    };
+    // BACKEND
+    const tarea = await TaskApi.crear(currentDayData.id, text);
 
-    window.handleDelete = function(id) {
-        currentDayData.tasks = currentDayData.tasks.filter(t => t.id !== id);
-        saveCurrentDay();
+    currentDayData.tasks.unshift({
+        id: tarea.id,
+        text: tarea.descripcion,
+        completed: tarea.realizada
+    });
+
+    els.taskInput.value = '';
+    renderTasks();
+    updateStats();
+    }
+
+    window.handleToggle = async function(id) {
+    const task = currentDayData.tasks.find(t => t.id === id);
+    if (!task) return;
+
+    if (!authToken) {
+        task.completed = !task.completed;
+        await saveCurrentDay();
         renderTasks();
         updateStats();
+        return;
+    }
+
+    await TaskApi.actualizar(id, {
+        descripcion: task.text,
+        realizada: !task.completed
+    });
+
+    task.completed = !task.completed;
+    renderTasks();
+    updateStats();
     };
+
+
+    window.handleDelete = async function(id) {
+    if (!authToken) {
+        currentDayData.tasks = currentDayData.tasks.filter(t => t.id !== id);
+        await saveCurrentDay();
+        renderTasks();
+        updateStats();
+        return;
+    }
+
+    await TaskApi.eliminar(id);
+    currentDayData.tasks = currentDayData.tasks.filter(t => t.id !== id);
+    renderTasks();
+    updateStats();
+    };
+
 
     function handleHydrationClick(count) {
         if (els.contentWrapper.classList.contains('read-only-mode')) return;
