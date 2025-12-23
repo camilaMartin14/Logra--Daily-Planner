@@ -1,4 +1,4 @@
-﻿namespace Logra_API.Services
+﻿namespace Logra_API.Services.Interfaces
 {
     public interface IUsuarioService
     {
