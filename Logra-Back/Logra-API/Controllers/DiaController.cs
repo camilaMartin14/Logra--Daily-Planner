@@ -1,43 +1,47 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿using Logra_API.DTOs;
+using Logra_API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Logra_API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class DiaController : ControllerBase
     {
-        // GET: api/<DiaController>
-        [HttpGet]
-        public IEnumerable<string> Get()
+        private readonly IDiaService _service;
+
+        public DiaController(IDiaService service)
         {
-            return new string[] { "value1", "value2" };
+            _service = service;
         }
 
-        // GET api/<DiaController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<IActionResult> ObtenerPorId(int id)
         {
-            return "value";
+            var dia = await _service.ObtenerDiaPorIdAsync(id);
+            if (dia == null)
+                return NotFound();
+
+            return Ok(dia);
         }
 
-        // POST api/<DiaController>
-        [HttpPost]
-        public void Post([FromBody] string value)
+        [HttpGet("usuario/{usuarioId}/fecha/{fecha}")]
+        public async Task<IActionResult> ObtenerOCrear(int usuarioId, DateOnly fecha)
         {
+            var dia = await _service.ObtenerOCrearDiaAsync(usuarioId, fecha);
+            return Ok(dia);
         }
 
-        // PUT api/<DiaController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task<IActionResult> Actualizar(int id, [FromBody] DiaUpdateDTO dto)
         {
-        }
+            var ok = await _service.ModificarDiaAsync(id, dto);
+            if (!ok)
+                return NotFound();
 
-        // DELETE api/<DiaController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
+            return NoContent();
         }
     }
 }

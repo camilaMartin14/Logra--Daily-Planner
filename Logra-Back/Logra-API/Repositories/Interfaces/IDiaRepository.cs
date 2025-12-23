@@ -4,12 +4,9 @@ namespace Logra_API.Repositories.Interfaces
 {
     public interface IDiaRepository
     {
-        int CrearDia(Dia dia);
-
-        Dia? ObtenerDiaPorId(int idDia);
-
-        Dia? ObtenerDiaPorUsuarioYFecha(int usuarioId, DateOnly fecha);
-
-        bool ModificarDia(Dia dia);
+        Task <int> CrearDia(Dia dia);
+        Task <Dia?> ObtenerDiaPorId(int idDia);
+        Task <Dia?> ObtenerDiaPorUsuarioYFecha(int usuarioId, DateOnly fecha);
+        Task <bool> ModificarDia(Dia dia);
     }
 }

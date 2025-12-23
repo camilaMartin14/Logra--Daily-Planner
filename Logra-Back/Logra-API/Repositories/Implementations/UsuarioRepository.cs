@@ -1,31 +1,33 @@
 ﻿using Logra_API.Models;
 using Logra_API.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Logra_API.Repositories.Implementations
 {
     public class UsuarioRepository : IUsuarioRepository
     {
         private readonly LograContext _context;
+
         public UsuarioRepository(LograContext context)
         {
             _context = context;
         }
 
-        public Usuario? ObtenerUsuarioPorEmail(string email)
+        public async Task<Usuario?> ObtenerUsuarioPorEmail(string email)
         {
-            return _context.Usuarios
-                .FirstOrDefault(u => u.Email == email);
+            return await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        public Usuario? ObtenerUsuarioPorId(int idUsuario)
+        public async Task<Usuario?> ObtenerUsuarioPorId(int idUsuario)
         {
-            return _context.Usuarios.Find(idUsuario);
+            return await _context.Usuarios.FindAsync(idUsuario);
         }
 
-        public int RegistrarUsuario(Usuario usuario)
+        public async Task<int> RegistrarUsuario(Usuario usuario)
         {
             _context.Usuarios.Add(usuario);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return usuario.Id;
         }
     }

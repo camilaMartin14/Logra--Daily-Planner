@@ -5,8 +5,9 @@ namespace Logra_API.Services.Interfaces
 {
     public interface IDiaService
     {
-        DiaDTO ObtenerOCrearDia(int usuarioId, DateOnly fecha);
-        DiaDTO? ObtenerDiaPorId(int idDia);
-        bool ModificarDia(int idDia, DiaDTO dto);
+            Task<bool> ModificarDiaAsync(int idDia, DiaUpdateDTO dto);
+            Task<DiaDTO?> ObtenerDiaPorIdAsync(int idDia);
+            Task<DiaDTO> ObtenerOCrearDiaAsync(int usuarioId, DateOnly fecha);
+
     }
 }

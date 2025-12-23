@@ -4,8 +4,8 @@ namespace Logra_API.Repositories.Interfaces
 {
     public interface IUsuarioRepository
     {
-        int RegistrarUsuario(Usuario usuario);
-        Usuario? ObtenerUsuarioPorId(int idUsuario);
-        Usuario? ObtenerUsuarioPorEmail(string email);
+        Task <int> RegistrarUsuario(Usuario usuario);
+        Task <Usuario?> ObtenerUsuarioPorId(int idUsuario);
+        Task <Usuario?> ObtenerUsuarioPorEmail(string email);
     }
 }

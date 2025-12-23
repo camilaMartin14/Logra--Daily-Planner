@@ -1,43 +1,64 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿using Logra_API.DTOs;
+using Logra_API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Logra_API.Controllers
 {
-    [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
+    [Route("api")]
     public class TareaController : ControllerBase
     {
-        // GET: api/<TareaController>
-        [HttpGet]
-        public IEnumerable<string> Get()
+        private readonly ITareaService _service;
+
+        public TareaController(ITareaService service)
         {
-            return new string[] { "value1", "value2" };
+            _service = service;
         }
 
-        // GET api/<TareaController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpPost("dias/{diaId}/tareas")]
+        public async Task<IActionResult> Crear(int diaId, [FromBody] TareaCreateDTO dto)
         {
-            return "value";
+            var id = await _service.CrearTareaAsync(diaId, dto);
+            return CreatedAtAction(nameof(ObtenerPorId), new { id }, null);
         }
 
-        // POST api/<TareaController>
-        [HttpPost]
-        public void Post([FromBody] string value)
+        [HttpGet("dias/{diaId}/tareas")]
+        public async Task<IActionResult> ObtenerPorDia(int diaId)
         {
+            var tareas = await _service.ObtenerTareasPorDiaAsync(diaId);
+            return Ok(tareas);
         }
 
-        // PUT api/<TareaController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [HttpGet("tareas/{id}")]
+        public async Task<IActionResult> ObtenerPorId(int id)
         {
+            var tarea = await _service.ObtenerTareaPorIdAsync(id);
+            if (tarea == null)
+                return NotFound();
+
+            return Ok(tarea);
         }
 
-        // DELETE api/<TareaController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        [HttpPut("tareas/{id}")]
+        public async Task<IActionResult> Actualizar(int id, [FromBody] TareaUpdateDTO dto)
         {
+            var ok = await _service.ActualizarTareaAsync(id, dto);
+            if (!ok)
+                return NotFound();
+
+            return NoContent();
+        }
+
+        [HttpDelete("tareas/{id}")]
+        public async Task<IActionResult> Eliminar(int id)
+        {
+            var ok = await _service.EliminarTareaAsync(id);
+            if (!ok)
+                return NotFound();
+
+            return NoContent();
         }
     }
 }

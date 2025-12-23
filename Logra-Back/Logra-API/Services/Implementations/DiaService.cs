@@ -8,14 +8,15 @@ namespace Logra_API.Services.Implementations
     public class DiaService : IDiaService
     {
         private readonly IDiaRepository _repo;
+
         public DiaService(IDiaRepository repo)
         {
             _repo = repo;
         }
 
-        public bool ModificarDia(int idDia, DiaDTO dto)
+        public async Task<bool> ModificarDiaAsync(int idDia, DiaUpdateDTO dto)
         {
-            var dia = _repo.ObtenerDiaPorId(idDia);
+            var dia = await _repo.ObtenerDiaPorId(idDia);
             if (dia == null) return false;
 
             dia.AguaConsumida = dto.AguaConsumida;
@@ -28,26 +29,32 @@ namespace Logra_API.Services.Implementations
             dia.Cena = dto.Cena;
             dia.Snack = dto.Snack;
 
-
-            return _repo.ModificarDia(dia);
+            return await _repo.ModificarDia(dia);
         }
 
-        public DiaDTO? ObtenerDiaPorId(int idDia)
+        public async Task<DiaDTO?> ObtenerDiaPorIdAsync(int idDia)
         {
-            var dia = _repo.ObtenerDiaPorId(idDia);
+            var dia = await _repo.ObtenerDiaPorId(idDia);
             if (dia == null) return null;
 
             return new DiaDTO
             {
                 Fecha = dia.Fecha,
+                Mood = dia.Mood,
+                NotaDia = dia.NotaDia,
+                NotaManiana = dia.NotaManiana,
                 AguaConsumida = dia.AguaConsumida,
-                HorasSueno = dia.HorasSueno
+                HorasSueno = dia.HorasSueno,
+                Desayuno = dia.Desayuno,
+                Almuerzo = dia.Almuerzo,
+                Cena = dia.Cena,
+                Snack = dia.Snack
             };
         }
 
-        public DiaDTO ObtenerOCrearDia(int usuarioId, DateOnly fecha)
+        public async Task<DiaDTO> ObtenerOCrearDiaAsync(int usuarioId, DateOnly fecha)
         {
-            var dia = _repo.ObtenerDiaPorUsuarioYFecha(usuarioId, fecha);
+            var dia = await _repo.ObtenerDiaPorUsuarioYFecha(usuarioId, fecha);
 
             if (dia == null)
             {
@@ -59,14 +66,21 @@ namespace Logra_API.Services.Implementations
                     HorasSueno = null
                 };
 
-                dia.Id = _repo.CrearDia(dia);
+                dia.Id = await _repo.CrearDia(dia);
             }
 
             return new DiaDTO
             {
                 Fecha = dia.Fecha,
+                Mood = dia.Mood,
+                NotaDia = dia.NotaDia,
+                NotaManiana = dia.NotaManiana,
                 AguaConsumida = dia.AguaConsumida,
-                HorasSueno = dia.HorasSueno
+                HorasSueno = dia.HorasSueno,
+                Desayuno = dia.Desayuno,
+                Almuerzo = dia.Almuerzo,
+                Cena = dia.Cena,
+                Snack = dia.Snack
             };
         }
     }

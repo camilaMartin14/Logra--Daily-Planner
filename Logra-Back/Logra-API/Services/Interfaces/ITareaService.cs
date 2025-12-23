@@ -1,14 +1,10 @@
 ﻿using Logra_API.DTOs;
-using Logra_API.Models;
 
-namespace Logra_API.Services.Interfaces
+public interface ITareaService
 {
-    public interface ITareaService
-    {
-        int CrearTarea(int diaId, TareaCreateDTO dto);
-        TareaDTO? ObtenerTareaPorId(int idTarea);
-        List<TareaDTO> ObtenerTareasPorDia(int diaId);
-        bool MarcarTareaComoRealizada(int idTarea, bool realizada);
-        bool EliminarTarea(int idTarea);
-    }
+    Task<int> CrearTareaAsync(int diaId, TareaCreateDTO dto);
+    Task<bool> EliminarTareaAsync(int idTarea);
+    Task<bool> ActualizarTareaAsync(int idTarea, TareaUpdateDTO dto);
+    Task<TareaDTO?> ObtenerTareaPorIdAsync(int idTarea);
+    Task<List<TareaDTO>> ObtenerTareasPorDiaAsync(int diaId);
 }

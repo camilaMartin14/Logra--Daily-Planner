@@ -9,14 +9,15 @@ namespace Logra_API.Services.Implementations
     public class UsuarioService : IUsuarioService
     {
         private readonly IUsuarioRepository _repo;
+
         public UsuarioService(IUsuarioRepository repo)
         {
             _repo = repo;
         }
 
-        public UsuarioDTO? Login(string email, string contrasenia)
+        public async Task<UsuarioDTO?> LoginAsync(string email, string contrasenia)
         {
-            var usuario = _repo.ObtenerUsuarioPorEmail(email);
+            var usuario = await _repo.ObtenerUsuarioPorEmail(email);
             if (usuario == null)
                 return null;
 
@@ -25,41 +26,44 @@ namespace Logra_API.Services.Implementations
 
             return new UsuarioDTO
             {
+                Id = usuario.Id,
                 Email = usuario.Email,
                 Nombre = usuario.Nombre,
                 Apellido = usuario.Apellido,
             };
         }
 
-        public UsuarioDTO? ObtenerUsuarioPorEmail(string email)
+        public async Task<UsuarioDTO?> ObtenerUsuarioPorEmailAsync(string email)
         {
-            var usuario = _repo.ObtenerUsuarioPorEmail(email);
+            var usuario = await _repo.ObtenerUsuarioPorEmail(email);
             if (usuario == null) return null;
 
             return new UsuarioDTO
             {
+                Id = usuario.Id,
                 Email = usuario.Email,
                 Nombre = usuario.Nombre,
                 Apellido = usuario.Apellido,
             };
         }
 
-        public UsuarioDTO? ObtenerUsuarioPorId(int idUsuario)
+        public async Task<UsuarioDTO?> ObtenerUsuarioPorIdAsync(int idUsuario)
         {
-            var usuario = _repo.ObtenerUsuarioPorId(idUsuario);
+            var usuario = await _repo.ObtenerUsuarioPorId(idUsuario);
             if (usuario == null) return null;
 
             return new UsuarioDTO
             {
+                Id = usuario.Id,
                 Email = usuario.Email,
                 Nombre = usuario.Nombre,
                 Apellido = usuario.Apellido,
             };
         }
 
-        public int RegistrarUsuario(UsuarioRegistroDTO dto)
+        public async Task<int> RegistrarUsuarioAsync(UsuarioRegistroDTO dto)
         {
-            var existente = _repo.ObtenerUsuarioPorEmail(dto.Email);
+            var existente = await _repo.ObtenerUsuarioPorEmail(dto.Email);
             if (existente != null)
                 throw new Exception("El email ya está registrado");
 
@@ -68,11 +72,11 @@ namespace Logra_API.Services.Implementations
                 Email = dto.Email,
                 Nombre = dto.Nombre,
                 Apellido = dto.Apellido,
-                FechaRegistro = DateTime.Now,
+                FechaRegistro = DateTime.UtcNow,
                 ContraseniaHash = PasswordHasher.Hash(dto.Contrasenia)
             };
 
-            return _repo.RegistrarUsuario(usuario);
+            return await _repo.RegistrarUsuario(usuario);
         }
     }
 }

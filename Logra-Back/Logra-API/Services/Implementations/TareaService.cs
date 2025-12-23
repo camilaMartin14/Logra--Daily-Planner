@@ -8,12 +8,13 @@ namespace Logra_API.Services.Implementations
     public class TareaService : ITareaService
     {
         private readonly ITareaRepository _repo;
+
         public TareaService(ITareaRepository repo)
         {
             _repo = repo;
         }
 
-        public int CrearTarea(int diaId, TareaCreateDTO dto)
+        public async Task<int> CrearTareaAsync(int diaId, TareaCreateDTO dto)
         {
             var tarea = new Tarea
             {
@@ -22,26 +23,28 @@ namespace Logra_API.Services.Implementations
                 Realizada = false
             };
 
-            return _repo.CrearTarea(tarea);
+            return await _repo.CrearTarea(tarea);
         }
 
-        public bool EliminarTarea(int idTarea)
+        public async Task<bool> EliminarTareaAsync(int idTarea)
         {
-            return _repo.EliminarTarea(idTarea);
+            return await _repo.EliminarTarea(idTarea);
         }
 
-        public bool MarcarTareaComoRealizada(int idTarea, bool realizada)
+        public async Task<bool> ActualizarTareaAsync(int idTarea, TareaUpdateDTO dto)
         {
-            var tarea = _repo.ObtenerTareaPorId(idTarea);
+            var tarea = await _repo.ObtenerTareaPorId(idTarea);
             if (tarea == null) return false;
 
-            tarea.Realizada = realizada;
-            return _repo.ModificarTarea(tarea);
+            tarea.Descripcion = dto.Descripcion;
+            tarea.Realizada = dto.Realizada;
+
+            return await _repo.ModificarTarea(tarea);
         }
 
-        public TareaDTO? ObtenerTareaPorId(int idTarea)
+        public async Task<TareaDTO?> ObtenerTareaPorIdAsync(int idTarea)
         {
-            var tarea = _repo.ObtenerTareaPorId(idTarea);
+            var tarea = await _repo.ObtenerTareaPorId(idTarea);
             if (tarea == null) return null;
 
             return new TareaDTO
@@ -52,9 +55,11 @@ namespace Logra_API.Services.Implementations
             };
         }
 
-        public List<TareaDTO> ObtenerTareasPorDia(int diaId)
+        public async Task<List<TareaDTO>> ObtenerTareasPorDiaAsync(int diaId)
         {
-            return _repo.ObtenerTareasPorDia(diaId)
+            var tareas = await _repo.ObtenerTareasPorDia(diaId);
+
+            return tareas
                 .Select(t => new TareaDTO
                 {
                     Id = t.Id,

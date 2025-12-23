@@ -1,4 +1,8 @@
 ﻿using Logra_API.Models;
+using Logra_API.Repositories.Implementations;
+using Logra_API.Repositories.Interfaces;
+using Logra_API.Services.Implementations;
+using Logra_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -62,13 +66,17 @@ builder.Services.AddDbContext<LograContext>(options =>
 });
 
 // ------------- Repositories -------------
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IDiaRepository, DiaRepository>();
+builder.Services.AddScoped<ITareaRepository, TareaRepository>();
+
 // ------------- Services -------------
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IDiaService, DiaService>();
+builder.Services.AddScoped<ITareaService, TareaService>();
 
 
-
-
-
-
+builder.Services.AddScoped<JwtTokenGenerator>();
 
 
 builder.Services.AddControllers();

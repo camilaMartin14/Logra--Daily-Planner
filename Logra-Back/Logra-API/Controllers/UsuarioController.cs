@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿using Logra_API.DTOs;
+using Logra_API.Services.Interfaces;
+using Logra_API.Security;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Logra_API.Controllers
 {
@@ -8,36 +11,60 @@ namespace Logra_API.Controllers
     [ApiController]
     public class UsuarioController : ControllerBase
     {
-        // GET: api/<UsuarioController>
-        [HttpGet]
-        public IEnumerable<string> Get()
+        private readonly IUsuarioService _service;
+        private readonly JwtTokenGenerator _jwt;
+
+        public UsuarioController(IUsuarioService service, JwtTokenGenerator jwt)
         {
-            return new string[] { "value1", "value2" };
+            _service = service;
+            _jwt = jwt;
         }
 
-        // GET api/<UsuarioController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpPost("registro")]
+        public async Task<IActionResult> Registrar([FromBody] UsuarioRegistroDTO dto)
         {
-            return "value";
+            try
+            {
+                var id = await _service.RegistrarUsuarioAsync(dto);
+                return CreatedAtAction(nameof(ObtenerActual), new { id }, null);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        // POST api/<UsuarioController>
-        [HttpPost]
-        public void Post([FromBody] string value)
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] UsuarioLoginDTO dto)
         {
+            var usuario = await _service.LoginAsync(dto.Email, dto.Contrasenia);
+            if (usuario == null)
+                return Unauthorized();
+
+            var token = _jwt.GenerateToken(usuario.Id, usuario.Email);
+
+            return Ok(new
+            {
+                token,
+                usuario
+            });
         }
 
-        // PUT api/<UsuarioController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> ObtenerActual()
         {
-        }
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (usuarioIdClaim == null)
+                return Unauthorized();
 
-        // DELETE api/<UsuarioController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
+            int usuarioId = int.Parse(usuarioIdClaim.Value);
+
+            var usuario = await _service.ObtenerUsuarioPorIdAsync(usuarioId);
+            if (usuario == null)
+                return NotFound();
+
+            return Ok(usuario);
         }
     }
 }

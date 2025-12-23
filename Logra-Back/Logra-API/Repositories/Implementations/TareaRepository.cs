@@ -1,58 +1,60 @@
 ﻿using Logra_API.Models;
 using Logra_API.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Logra_API.Repositories.Implementations
 {
     public class TareaRepository : ITareaRepository
     {
         private readonly LograContext _context;
+
         public TareaRepository(LograContext context)
         {
             _context = context;
         }
 
-        public int CrearTarea(Tarea tarea)
+        public async Task<int> CrearTarea(Tarea tarea)
         {
             _context.Tareas.Add(tarea);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return tarea.Id;
         }
 
-        public bool EliminarTarea(int idTarea)
+        public async Task<bool> EliminarTarea(int idTarea)
         {
-            var tarea = _context.Tareas.Find(idTarea);
+            var tarea = await _context.Tareas.FindAsync(idTarea);
             if (tarea == null)
                 return false;
 
             _context.Tareas.Remove(tarea);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
 
-        public bool ModificarTarea(Tarea tarea)
+        public async Task<bool> ModificarTarea(Tarea tarea)
         {
-            var tareaExistente = _context.Tareas.Find(tarea.Id);
+            var tareaExistente = await _context.Tareas.FindAsync(tarea.Id);
             if (tareaExistente == null)
                 return false;
 
             tareaExistente.Descripcion = tarea.Descripcion;
             tareaExistente.Realizada = tarea.Realizada;
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
 
-        public Tarea? ObtenerTareaPorId(int idTarea)
+        public async Task<Tarea?> ObtenerTareaPorId(int idTarea)
         {
-            return _context.Tareas.Find(idTarea);
+            return await _context.Tareas.FindAsync(idTarea);
         }
 
-        public List<Tarea> ObtenerTareasPorDia(int diaId)
+        public async Task<List<Tarea>> ObtenerTareasPorDia(int diaId)
         {
-            return _context.Tareas
+            return await _context.Tareas
                 .Where(t => t.DiaId == diaId)
                 .OrderBy(t => t.FechaCreacion)
-                .ToList();
+                .ToListAsync();
         }
     }
 }
