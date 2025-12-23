@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logra – Daily Planner</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="paper-texture"></div>
+
+    <div class="container py-5 content-wrapper">
+        <header class="text-center mb-5 fade-in">
+            <h1 class="display-4 fw-bold planner-title">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                Logra 
+            </h1>
+            <p class="lead text-muted fst-italic planner-subtitle">Daily Planner</p>
+            
+            <div class="d-flex justify-content-center align-items-center gap-3 mt-4">
+                <button class="btn btn-link nav-btn" id="prev-day-btn" title="Día anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <div id="current-date" class="date-badge"></div>
+                <button class="btn btn-link nav-btn" id="next-day-btn" title="Día siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+            <div id="day-status-indicator" class="mt-2 text-muted small fst-italic" style="height: 20px;"></div>
+        </header>
+
+        <div class="row g-4">
+            <div class="col-lg-7 col-md-12">
+                <div class="card h-100 planner-card shadow-sm main-todo-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center mb-4 gap-3">
+                            <h2 class="h4 card-title mb-0"><i class="bi bi-check2-square me-2"></i>Tareas</h2>
+                            
+                            <div class="d-flex gap-2 filter-container">
+                                <button class="btn btn-sm filter-btn active" data-filter="all">
+                                    Todas <span class="badge rounded-pill ms-1" id="count-all">0</span>
+                                </button>
+                                <button class="btn btn-sm filter-btn" data-filter="pending">
+                                    Pendientes <span class="badge rounded-pill ms-1" id="count-pending">0</span>
+                                </button>
+                                <button class="btn btn-sm filter-btn" data-filter="completed">
+                                    Listas <span class="badge rounded-pill ms-1" id="count-completed">0</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="input-group mb-4">
+                            <input type="text" id="new-task-input" class="form-control form-control-lg planner-input" placeholder="Escribe una nueva tarea...">
+                            <button class="btn btn-primary planner-btn" type="button" id="add-task-btn">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+
+                        <ul class="list-group list-group-flush" id="todo-list">
+                        </ul>
+                        
+                        <div id="empty-state" class="text-center py-5 text-muted" style="display: none;">
+                            <i class="bi bi-flower1 fs-1 opacity-50"></i>
+                            <p class="mt-2">Todo listo por ahora. ¡Disfruta tu día!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5 col-md-12">
+                <div class="d-flex flex-column gap-4">
+                    
+                    <div class="card planner-card shadow-sm">
+                        <div class="card-body p-4">
+                            <h3 class="h5 card-title mb-3"><i class="bi bi-emoji-smile me-2"></i>Mood del Día</h3>
+                            <div class="d-flex justify-content-around mood-selector">
+                                <button class="btn btn-outline-mood mood-btn" data-mood="happy" title="Feliz">
+                                    <i class="bi bi-emoji-laughing"></i>
+                                </button>
+                                <button class="btn btn-outline-mood mood-btn" data-mood="neutral" title="Neutral">
+                                    <i class="bi bi-emoji-neutral"></i>
+                                </button>
+                                <button class="btn btn-outline-mood mood-btn" data-mood="sad" title="Triste">
+                                    <i class="bi bi-emoji-frown"></i>
+                                </button>
+                            </div>
+                            <div class="text-center mt-2">
+                                <small id="selected-mood-text" class="text-muted fst-italic"></small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card planner-card shadow-sm">
+                        <div class="card-body p-4">
+                            <h3 class="h5 card-title mb-3"><i class="bi bi-journal-text me-2"></i>Nota del Día</h3>
+                            <textarea id="daily-note" class="form-control planner-textarea" rows="4" placeholder="Un pensamiento, gratitud o recordatorio..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="card planner-card shadow-sm">
+                        <div class="card-body p-4">
+                            <h3 class="h5 card-title mb-3"><i class="bi bi-arrow-right-circle me-2"></i>Para Mañana</h3>
+                            <textarea id="tomorrow-note" class="form-control planner-textarea" rows="3" placeholder="Objetivos clave para mañana..."></textarea>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-12 text-center">
+                <div class="auth-teaser p-4 rounded-3">
+                    <p class="mb-3 text-muted">Si quieres persistir tus tareas en la nube, inicia sesión.</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <button class="btn btn-outline-primary planner-btn-outline" data-bs-toggle="modal" data-bs-target="#loginModal">Iniciar Sesión</button>
+                        <button class="btn btn-primary planner-btn" data-bs-toggle="modal" data-bs-target="#registerModal">Registrarse</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center mt-5 py-3 text-muted">
+            <small>Logra 2025 – Desarrollado por Camila Martín</small>
+        </footer>
+    </div>
+
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content planner-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title font-serif">Iniciar Sesión</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control planner-input" id="loginEmail">
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Contraseña</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control planner-input" id="loginPassword">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('loginPassword')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary planner-btn">Ingresar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content planner-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title font-serif">Registrarse</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label for="regName" class="form-label">Nombre</label>
+                                <input type="text" class="form-control planner-input" id="regName">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label for="regSurname" class="form-label">Apellido</label>
+                                <input type="text" class="form-control planner-input" id="regSurname">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="regEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control planner-input" id="regEmail">
+                        </div>
+                        <div class="mb-3">
+                            <label for="regPassword" class="form-label">Contraseña</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control planner-input" id="regPassword">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('regPassword')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="regConfirmPassword" class="form-label">Confirmar Contraseña</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control planner-input" id="regConfirmPassword">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('regConfirmPassword')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary planner-btn">Registrarse</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+<script src="https://kit.fontawesome.com/8d77e74cbe.js" crossorigin="anonymous"></script>
+</html>

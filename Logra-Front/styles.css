@@ -1,0 +1,326 @@
+:root {
+    /* Pastel Palette */
+    --bg-color: #f9f7f2; /* Warm paper-like off-white */
+    --primary-color: #e2b3c4; /* Dusty Pink */
+    --primary-hover: #d59bb0;
+    --secondary-color: #dcd6f7; /* Soft Lavender */
+    --accent-color: #a6b1e1; /* Periwinkle */
+    --text-color: #5d5c61; /* Soft Dark Gray */
+    --card-bg: #ffffff;
+    --border-radius: 16px;
+    --shadow-soft: 0 10px 25px rgba(166, 177, 225, 0.15);
+    
+    /* Font Families */
+    --font-heading: 'Lora', serif;
+    --font-body: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Paper Texture Effect */
+.paper-texture {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: -1;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    color: #424242;
+}
+
+.planner-title {
+    color: var(--primary-hover);
+    letter-spacing: 2px;
+}
+
+.planner-subtitle {
+    font-family: var(--font-heading);
+    letter-spacing: 1px;
+}
+
+/* Date Navigation */
+.date-badge {
+    display: inline-block;
+    background: #fff;
+    padding: 0.5rem 1.5rem;
+    border-radius: 50px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    font-weight: 500;
+    color: var(--primary-hover);
+    border: 1px solid rgba(0,0,0,0.02);
+    min-width: 200px; /* Prevent jumping */
+}
+
+.nav-btn {
+    color: var(--accent-color);
+    font-size: 1.5rem;
+    padding: 0;
+    text-decoration: none;
+    transition: transform 0.2s, color 0.2s;
+}
+
+.nav-btn:hover {
+    color: var(--primary-color);
+    transform: scale(1.2);
+}
+
+/* Cards */
+.planner-card {
+    border: none;
+    border-radius: var(--border-radius);
+    background-color: var(--card-bg);
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.planner-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(166, 177, 225, 0.25);
+}
+
+/* Inputs */
+.planner-input {
+    border: 2px solid #eee;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background-color: #fcfcfc;
+}
+
+.planner-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(226, 179, 196, 0.1);
+    background-color: #fff;
+}
+
+.planner-textarea {
+    border: 1px dashed #ccc; /* Notebook feel */
+    border-radius: 12px;
+    background-color: #fffdf9;
+    resize: none;
+    line-height: 1.6;
+}
+
+.planner-textarea:focus {
+    border-color: var(--primary-color);
+    border-style: solid;
+    box-shadow: none;
+    background-color: #fff;
+}
+
+/* Buttons */
+.planner-btn {
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 12px;
+    padding: 0.6rem 1.5rem;
+    font-weight: 500;
+    color: #fff;
+    transition: all 0.3s;
+}
+
+.planner-btn:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.02);
+    color: #fff;
+}
+
+.planner-btn-outline {
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 12px;
+    padding: 0.6rem 1.5rem;
+    font-weight: 500;
+}
+
+.planner-btn-outline:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
+/* Filter Buttons */
+.filter-btn {
+    border: 1px solid #eee;
+    background-color: #fff;
+    color: #888;
+    border-radius: 20px;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+    background-color: #fafafa;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.filter-btn.active {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
+.filter-btn .badge {
+    background-color: #eee;
+    color: #888;
+    font-weight: normal;
+    font-size: 0.75em;
+    padding-top: 0.35em;
+}
+
+.filter-btn.active .badge {
+    background-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+}
+
+/* To-Do List Items */
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 1rem 0;
+    margin-bottom: 0.5rem;
+    background: transparent;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.form-check-input {
+    width: 1.4em;
+    height: 1.4em;
+    margin-right: 1rem;
+    border-color: #ddd;
+    cursor: pointer;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.todo-text {
+    font-size: 1.05rem;
+    color: #4a4a4a;
+    transition: color 0.3s;
+}
+
+.completed-task .todo-text {
+    text-decoration: line-through;
+    color: #b0b0b0;
+}
+
+.delete-btn {
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: #e57373;
+    background: none;
+    border: none;
+}
+
+.list-group-item:hover .delete-btn {
+    opacity: 1;
+}
+
+/* Mood Tracker */
+.mood-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid #eee;
+    font-size: 1.5rem;
+    color: #aaa;
+    background: #fff;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mood-btn:hover {
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+    transform: scale(1.1);
+}
+
+.mood-btn.active {
+    background-color: var(--secondary-color);
+    color: #fff;
+    border-color: var(--secondary-color);
+    box-shadow: 0 4px 10px rgba(220, 214, 247, 0.4);
+}
+
+/* Auth Teaser */
+.auth-teaser {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px dashed var(--primary-color);
+}
+
+/* Read-Only State for Past Days */
+.read-only-mode {
+    opacity: 0.8;
+}
+
+.read-only-mode input,
+.read-only-mode textarea,
+.read-only-mode button:not(.nav-btn):not(.filter-btn) {
+    pointer-events: none;
+    background-color: #f8f8f8;
+    border-color: #eee;
+    color: #888;
+}
+
+.read-only-mode .planner-btn, 
+.read-only-mode .delete-btn {
+    display: none !important;
+}
+
+.read-only-mode .mood-btn {
+    pointer-events: none;
+    opacity: 0.5;
+}
+.read-only-mode .mood-btn.active {
+    opacity: 1;
+}
+
+/* Future Mode */
+.future-mode .planner-card {
+    border: 1px dashed var(--accent-color);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2.5rem;
+    }
+}
