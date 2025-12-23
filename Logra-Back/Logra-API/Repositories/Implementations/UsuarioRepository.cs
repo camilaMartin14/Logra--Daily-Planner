@@ -11,14 +11,16 @@ namespace Logra_API.Repositories.Implementations
             _context = context;
         }
 
-        public Usuario ObtenerUsuarioPorEmail(string email)
+        public Usuario? ObtenerUsuarioPorEmail(string email)
         {
-            return _context.Usuarios.FirstOrDefault(u => u.Email == email);
+            return _context.Usuarios
+                .FirstOrDefault(u => u.Email == email);
         }
 
-        public Usuario ObtenerUsuarioPorId(int idUsuario)
+        public Usuario? ObtenerUsuarioPorId(int idUsuario)
         {
-            return _context.Usuarios.FirstOrDefault(u => u.Id == idUsuario);
+            return _context.Usuarios
+                .FirstOrDefault(u => u.Id == idUsuario);
         }
 
         public int RegistrarUsuario(Usuario usuario)
@@ -28,12 +30,10 @@ namespace Logra_API.Repositories.Implementations
             return usuario.Id;
         }
 
-        public bool ValidarCredenciales(string email, string contraseniaHash)
+        public bool ValidarCredenciales(string email, string passwordHash)
         {
-            return _context.Usuarios.Any(u =>
-            u.Email == email &&
-            u.ContraseniaHash == contraseniaHash
-        );
+            return _context.Usuarios
+                .Any(u => u.Email == email && u.ContraseniaHash == passwordHash);
         }
     }
 }
