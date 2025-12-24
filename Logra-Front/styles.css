@@ -1,10 +1,10 @@
 :root {
-    --bg-color: #f9f7f2; /* Warm paper-like off-white */
-    --primary-color: #e2b3c4; /* Dusty Pink */
+    --bg-color: #f9f7f2;
+    --primary-color: #e2b3c4;
     --primary-hover: #d59bb0;
-    --secondary-color: #dcd6f7; /* Soft Lavender */
-    --accent-color: #a6b1e1; /* Periwinkle */
-    --text-color: #5d5c61; /* Soft Dark Gray */
+    --secondary-color: #dcd6f7;
+    --accent-color: #a6b1e1;
+    --text-color: #5d5c61;
     --card-bg: #ffffff;
     --border-radius: 16px;
     --shadow-soft: 0 10px 25px rgba(166, 177, 225, 0.15);
@@ -57,7 +57,7 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 500;
     color: var(--primary-hover);
     border: 1px solid rgba(0,0,0,0.02);
-    min-width: 200px; /* Prevent jumping */
+    min-width: 200px;
 }
 
 .nav-btn {
@@ -74,7 +74,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .planner-card {
-    border: none;
+    border: 1px dashed var(--accent-color);
     border-radius: var(--border-radius);
     background-color: var(--card-bg);
     box-shadow: var(--shadow-soft);
@@ -102,7 +102,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .planner-textarea {
-    border: 1px dashed #ccc; /* Notebook feel */
+    border: 1px dashed #ccc;
     border-radius: 12px;
     background-color: #fffdf9;
     resize: none;
@@ -233,7 +233,7 @@ h1, h2, h3, h4, h5, h6 {
     opacity: 1;
 }
 
-/* Mood Tracker */
+
 .mood-btn {
     width: 60px;
     height: 60px;
@@ -295,16 +295,14 @@ h1, h2, h3, h4, h5, h6 {
 .read-only-mode .wellness-btn {
     pointer-events: none;
     opacity: 0.5;
-    background-color: transparent !important; /* Override generic button rule */
+    background-color: transparent !important;
 }
 .read-only-mode .wellness-btn.active,
 .read-only-mode .wellness-btn.sleep-active {
     opacity: 1;
 }
 
-.future-mode .planner-card {
-    border: 1px dashed var(--accent-color);
-}
+
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
@@ -327,7 +325,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0;
     cursor: pointer;
     transition: transform 0.2s, color 0.2s;
-    color: #e0e0e0; /* Inactive color */
+    color: #e0e0e0;
 }
 
 .wellness-btn:hover {
@@ -336,11 +334,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .wellness-btn.active {
-    color: #64b5f6; /* Blue for water */
+    color: #64b5f6;
 }
 
 .wellness-btn.sleep-active {
-    color: #7986cb; /* Indigo for sleep */
+    color: #7986cb;
 }
 
 .wellness-icon {

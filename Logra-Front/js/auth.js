@@ -16,7 +16,7 @@ async function register(data) {
         body: JSON.stringify(data)
     });
 }
-// Login Handler
+
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
     loginForm.addEventListener('submit', async e => {
@@ -44,7 +44,23 @@ if (loginForm) {
     });
 }
 
-// Register Handler
+
+window.togglePassword = function(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = document.querySelector(`button[onclick="togglePassword('${inputId}')"] i`);
+    
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove("bi-eye");
+        icon.classList.add("bi-eye-slash");
+    } else {
+        input.type = "password";
+        icon.classList.remove("bi-eye-slash");
+        icon.classList.add("bi-eye");
+    }
+};
+
+
 const registerForm = document.getElementById('registerForm');
 if (registerForm) {
     registerForm.addEventListener('submit', async e => {
@@ -70,9 +86,7 @@ if (registerForm) {
         };
 
         try {
-            console.log('Attempting register for:', email);
             await register(data);
-            console.log('Register success');
             alert('Registro exitoso. Por favor inicia sesión.');
             location.reload();
         } catch (err) {

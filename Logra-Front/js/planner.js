@@ -6,8 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let currentDayData = getEmptyDayData();
+    let selectedDate = new Date();
+    let currentFilter = 'all';
+
     const els = {
         currentDate: document.getElementById('current-date'),
+        prevDayBtn: document.getElementById('prev-day-btn'),
+        nextDayBtn: document.getElementById('next-day-btn'),
         dayStatus: document.getElementById('day-status-indicator'),
         taskInput: document.getElementById('new-task-input'),
         addTaskBtn: document.getElementById('add-task-btn'),
@@ -57,30 +62,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadDay() {
         try {
+            const dateKey = selectedDate.toISOString().split('T')[0];
+            
             if (authToken) {
-                // Usamos la fecha de hoy para cargar
-                const dateKey = new Date().toISOString().split('T')[0];
                 currentDayData = await DayApi.obtenerOCrear(dateKey);
+                
+                if (currentDayData && currentDayData.id) {
+                    try {
+                        const backendTasks = await TaskApi.listar(currentDayData.id);
+                        if (backendTasks && Array.isArray(backendTasks)) {
+                            currentDayData.tasks = backendTasks.map(t => ({
+                                id: t.id,
+                                text: t.descripcion,
+                                completed: t.realizada
+                            }));
+                        }
+                    } catch (err) {
+                        console.error("Error cargando tareas:", err);
+                    }
+                }
             } else {
                 const db = JSON.parse(localStorage.getItem('logra_db') || '{}');
-                currentDayData = db['today'] || getEmptyDayData();
+                currentDayData = db[dateKey] || getEmptyDayData();
             }
         } catch (e) {
             console.warn("Error cargando día:", e);
             currentDayData = getEmptyDayData();
         }
         
-        // Garantizar estructura
         if (!currentDayData) currentDayData = getEmptyDayData();
         if (!Array.isArray(currentDayData.tasks)) currentDayData.tasks = [];
         
-        // Asegurar ID
         if (!currentDayData.id) currentDayData.id = authToken ? await createBackendDay() : Date.now();
         
         renderUI();
     }
 
-    // Función para extraer el userId del token JWT
     function getUsuarioIdFromToken() {
         if (!authToken) return null;
         try {
@@ -91,15 +108,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-async function createBackendDay() {
-    const dateStr = new Date().toISOString().split('T')[0];
-    try {
-        const usuarioId = getUsuarioIdFromToken(); // asegurate de tener esta función
+    async function createBackendDay() {
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        try {
+            const usuarioId = getUsuarioIdFromToken(); 
         if (!usuarioId) throw new Error("No hay usuario logueado");
 
         const result = await apiFetch('/dia', {
             method: 'POST',
-            body: JSON.stringify({ fecha: dateStr, usuarioId }) // "usuarioId" coincide con tu DTO
+            body: JSON.stringify({ fecha: dateStr, usuarioId }) 
         });
 
         return result?.id || null;
@@ -138,7 +155,8 @@ async function createBackendDay() {
         }
     } else {
         const db = JSON.parse(localStorage.getItem('logra_db') || '{}');
-        db['today'] = currentDayData;
+        const dateKey = selectedDate.toISOString().split('T')[0];
+        db[dateKey] = currentDayData;
         localStorage.setItem('logra_db', JSON.stringify(db));
     }
 
@@ -159,14 +177,50 @@ async function createBackendDay() {
     }
 
     function renderHeader() {
-        els.currentDate.textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-        els.dayStatus.textContent = 'Hoy';
+        els.currentDate.textContent = selectedDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        
+const today = new Date();
+        const isToday = selectedDate.toDateString() === today.toDateString();
+        
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const isTomorrow = selectedDate.toDateString() === tomorrow.toDateString();
+
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const isYesterday = selectedDate.toDateString() === yesterday.toDateString();
+
+        if (isToday) els.dayStatus.textContent = 'Hoy';
+        else if (isTomorrow) els.dayStatus.textContent = 'Planificando';
+        else if (isYesterday) els.dayStatus.textContent = 'Ayer';
+        else els.dayStatus.textContent = '';
     }
 
     function applyDayStatusStyles() {
-        els.contentWrapper.classList.remove('read-only-mode', 'future-mode');
-        els.taskInput.placeholder = "Escribe una nueva tarea...";
-        disableInputs(false);
+        const today = new Date();
+        
+        today.setHours(0, 0, 0, 0);
+        const selected = new Date(selectedDate);
+        selected.setHours(0, 0, 0, 0);
+
+ if (selected < today) {
+            
+            els.contentWrapper.classList.add('read-only-mode');
+            els.contentWrapper.classList.remove('future-mode');
+            els.taskInput.placeholder = "Día pasado (Solo lectura)";
+            disableInputs(true);
+ } else if (selected > today) {
+             
+             els.contentWrapper.classList.remove('read-only-mode');
+             els.contentWrapper.classList.add('future-mode');
+             els.taskInput.placeholder = "Planifica para el futuro...";
+             disableInputs(false);
+} else {
+            
+            els.contentWrapper.classList.remove('read-only-mode', 'future-mode');
+            els.taskInput.placeholder = "Escribe una nueva tarea...";
+            disableInputs(false);
+        }
     }
 
     function disableInputs(disabled) {
@@ -179,6 +233,19 @@ async function createBackendDay() {
         els.todoList.innerHTML = '';
         const tasksArray = Array.isArray(currentDayData.tasks) ? currentDayData.tasks : [];
         let visibleTasks = tasksArray;
+
+        if (currentFilter === 'pending') {
+            visibleTasks = visibleTasks.filter(t => !t.completed);
+        } else if (currentFilter === 'completed') {
+            visibleTasks = visibleTasks.filter(t => t.completed);
+        }
+        
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selected = new Date(selectedDate);
+        selected.setHours(0, 0, 0, 0);
+        const isReadOnly = selected < today;
 
         if (visibleTasks.length === 0) {
             els.emptyState.style.display = tasksArray.length === 0 ? 'block' : 'none';
@@ -194,11 +261,17 @@ async function createBackendDay() {
         visibleTasks.forEach(task => {
             const li = document.createElement('li');
             li.className = `list-group-item ${task.completed ? 'completed-task' : ''}`;
+            
+            
+            const checkboxAttr = isReadOnly ? 'disabled' : '';
+            const deleteBtnStyle = isReadOnly ? 'display: none;' : '';
+            const deleteAction = isReadOnly ? '' : `onclick="window.handleDelete(${task.id})"`;
+
             li.innerHTML = `
                 <div class="d-flex align-items-center w-100">
-                    <input class="form-check-input rounded-circle" type="checkbox" ${task.completed ? 'checked' : ''} onchange="window.handleToggle(${task.id})">
+                    <input class="form-check-input rounded-circle" type="checkbox" ${task.completed ? 'checked' : ''} ${checkboxAttr} onchange="window.handleToggle(${task.id})">
                     <span class="todo-text flex-grow-1">${escapeHtml(task.text)}</span>
-                    <button class="delete-btn" onclick="window.handleDelete(${task.id})" title="Eliminar">
+                    <button class="delete-btn" ${deleteAction} style="${deleteBtnStyle}" title="Eliminar">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -217,7 +290,7 @@ async function createBackendDay() {
     }
 
     function updateFilterUI() {
-        els.filterBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.filter === 'all'));
+        els.filterBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.filter === currentFilter));
     }
 
     function renderMood() {
@@ -258,12 +331,12 @@ async function createBackendDay() {
 }
 
 
-    // Agregar tarea en backend
+    
     async function handleAddTask() {
         const text = els.taskInput.value.trim();
         if (!text) return;
 
-        const todayKey = new Date().toISOString().split('T')[0];
+        const todayKey = selectedDate.toISOString().split('T')[0];
 
         if (!authToken) {
             if (!currentDayData.id) currentDayData.id = Date.now();
@@ -283,13 +356,23 @@ async function createBackendDay() {
         }
 
         try {
-            const tarea = await TaskApi.crear(currentDayData.id, text);
-            if (tarea) {
-                currentDayData.tasks.unshift({ id: tarea.id, text: tarea.descripcion, completed: tarea.realizada });
-                await saveCurrentDay();
-                renderTasks();
-                els.taskInput.value = '';
+            await TaskApi.crear(currentDayData.id, text);
+            
+            
+            const backendTasks = await TaskApi.listar(currentDayData.id);
+            if (backendTasks && Array.isArray(backendTasks)) {
+                currentDayData.tasks = backendTasks.map(t => ({
+                    id: t.id,
+                    text: t.descripcion,
+                    completed: t.realizada
+                }));
+                
+                currentDayData.tasks.sort((a, b) => b.id - a.id);
             }
+
+            await saveCurrentDay();
+            renderTasks();
+            els.taskInput.value = '';
         } catch (e) {
             console.error("Error creando tarea:", e);
             alert("No se pudo crear la tarea en el servidor.");
@@ -314,7 +397,23 @@ async function createBackendDay() {
         return div.innerHTML;
     }
 
+    function changeDate(offset) {
+        selectedDate.setDate(selectedDate.getDate() + offset);
+        loadDay();
+    }
+
     function setupEventListeners() {
+        els.prevDayBtn.addEventListener('click', () => changeDate(-1));
+        els.nextDayBtn.addEventListener('click', () => changeDate(1));
+
+        els.filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentFilter = btn.dataset.filter;
+                updateFilterUI();
+                renderTasks();
+            });
+        });
+
         els.addTaskBtn.addEventListener('click', handleAddTask);
         els.taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleAddTask(); });
         els.moodBtns.forEach(btn => btn.addEventListener('click', () => { currentDayData.mood = btn.getAttribute('data-mood'); saveCurrentDay(); renderMood(); }));
@@ -346,50 +445,48 @@ async function createBackendDay() {
         await loadDay();
     }
 
+    window.handleToggle = async function(taskId) {
+        const task = currentDayData.tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        task.completed = !task.completed;
+
+        if (authToken) {
+            try {
+                await TaskApi.actualizar(task.id, { realizada: task.completed });
+            } catch (e) {
+                console.error('Error actualizando tarea en backend:', e);
+                alert('No se pudo actualizar la tarea en el servidor.');
+                task.completed = !task.completed; 
+            }
+        }
+
+        await saveCurrentDay();
+        renderTasks();
+    };
+
+    window.handleDelete = async function(taskId) {
+        const index = currentDayData.tasks.findIndex(t => t.id === taskId);
+        if (index === -1) return;
+
+        const confirmed = confirm('¿Seguro que quieres eliminar esta tarea?');
+        if (!confirmed) return;
+
+        const [removed] = currentDayData.tasks.splice(index, 1);
+
+        if (authToken) {
+            try {
+                await TaskApi.eliminar(removed.id);
+            } catch (e) {
+                console.error('Error eliminando tarea en backend:', e);
+                alert('No se pudo eliminar la tarea en el servidor.');
+                currentDayData.tasks.splice(index, 0, removed); 
+            }
+        }
+
+        await saveCurrentDay();
+        renderTasks();
+    };
+
     init();
 });
-
-window.handleToggle = async function(taskId) {
-    const task = currentDayData.tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    task.completed = !task.completed;
-
-    if (authToken) {
-        try {
-            await TaskApi.actualizar(task.id, { realizada: task.completed });
-        } catch (e) {
-            console.error('Error actualizando tarea en backend:', e);
-            alert('No se pudo actualizar la tarea en el servidor.');
-            task.completed = !task.completed; // revertir cambio
-        }
-    }
-
-    await saveCurrentDay();
-    renderTasks();
-};
-
-window.handleDelete = async function(taskId) {
-    const index = currentDayData.tasks.findIndex(t => t.id === taskId);
-    if (index === -1) return;
-
-    const confirmed = confirm('¿Seguro que quieres eliminar esta tarea?');
-    if (!confirmed) return;
-
-    const [removed] = currentDayData.tasks.splice(index, 1);
-
-    if (authToken) {
-        try {
-            await TaskApi.eliminar(removed.id);
-        } catch (e) {
-            console.error('Error eliminando tarea en backend:', e);
-            alert('No se pudo eliminar la tarea en el servidor.');
-            currentDayData.tasks.splice(index, 0, removed); // revertir eliminación
-        }
-    }
-
-    await saveCurrentDay();
-    renderTasks();
-};
-
-
