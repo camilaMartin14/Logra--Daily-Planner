@@ -34,7 +34,7 @@
    "UseBoolPropertiesWithoutDefaultSql": false,
    "UseDatabaseNames": false,
    "UseDatabaseNamesForRoutines": true,
-   "UseDateOnlyTimeOnly": true,
+   "UseDateTimeTimeOnly": true,
    "UseDbContextSplitting": false,
    "UseDecimalDataAnnotationForSprocResult": true,
    "UseFluentApiOnly": true,

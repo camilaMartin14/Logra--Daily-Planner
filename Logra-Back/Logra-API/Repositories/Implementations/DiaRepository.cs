@@ -32,7 +32,7 @@ namespace Logra_API.Repositories.Implementations
             return await _context.Dias.FindAsync(idDia);
         }
 
-        public async Task<Dia?> ObtenerDiaPorUsuarioYFecha(int usuarioId, DateOnly fecha)
+        public async Task<Dia?> ObtenerDiaPorUsuarioYFecha(int usuarioId, DateTime fecha)
         {
             return await _context.Dias
                 .FirstOrDefaultAsync(d => d.UsuarioId == usuarioId && d.Fecha == fecha);

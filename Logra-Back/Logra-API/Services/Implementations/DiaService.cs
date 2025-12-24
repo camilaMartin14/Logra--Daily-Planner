@@ -37,51 +37,53 @@ namespace Logra_API.Services.Implementations
             var dia = await _repo.ObtenerDiaPorId(idDia);
             if (dia == null) return null;
 
-            return new DiaDTO
-            {
-                Fecha = dia.Fecha,
-                Mood = dia.Mood,
-                NotaDia = dia.NotaDia,
-                NotaManiana = dia.NotaManiana,
-                AguaConsumida = dia.AguaConsumida,
-                HorasSueno = dia.HorasSueno,
-                Desayuno = dia.Desayuno,
-                Almuerzo = dia.Almuerzo,
-                Cena = dia.Cena,
-                Snack = dia.Snack
-            };
+            return MapToDTO(dia);
         }
 
-        public async Task<DiaDTO> ObtenerOCrearDiaAsync(int usuarioId, DateOnly fecha)
+        public async Task<DiaDTO> ObtenerOCrearDiaAsync(int usuarioId)
         {
-            var dia = await _repo.ObtenerDiaPorUsuarioYFecha(usuarioId, fecha);
+            var fechaHoy = DateTime.Today;
 
+            var dia = await _repo.ObtenerDiaPorUsuarioYFecha(usuarioId, fechaHoy);
             if (dia == null)
             {
-                dia = new Dia
-                {
-                    UsuarioId = usuarioId,
-                    Fecha = fecha,
-                    AguaConsumida = 0,
-                    HorasSueno = null
-                };
-
+                dia = CrearDiaPorDefecto(usuarioId, fechaHoy);
                 dia.Id = await _repo.CrearDia(dia);
             }
 
-            return new DiaDTO
+            return MapToDTO(dia);
+        }
+
+        private Dia CrearDiaPorDefecto(int usuarioId, DateTime fecha)
+        {
+            return new Dia
             {
-                Fecha = dia.Fecha,
-                Mood = dia.Mood,
-                NotaDia = dia.NotaDia,
-                NotaManiana = dia.NotaManiana,
-                AguaConsumida = dia.AguaConsumida,
-                HorasSueno = dia.HorasSueno,
-                Desayuno = dia.Desayuno,
-                Almuerzo = dia.Almuerzo,
-                Cena = dia.Cena,
-                Snack = dia.Snack
+                Fecha = fecha,
+                Mood = "",
+                NotaDia = "",
+                NotaManiana = "",
+                AguaConsumida = 0,
+                HorasSueno = 0,
+                Desayuno = "",
+                Almuerzo = "",
+                Cena = "",
+                Snack = ""
             };
         }
+
+        private DiaDTO MapToDTO(Dia dia) => new DiaDTO
+        {
+            Id = dia.Id,
+            Fecha = dia.Fecha,
+            Mood = dia.Mood,
+            NotaDia = dia.NotaDia,
+            NotaManiana = dia.NotaManiana,
+            AguaConsumida = dia.AguaConsumida,
+            HorasSueno = dia.HorasSueno,
+            Desayuno = dia.Desayuno,
+            Almuerzo = dia.Almuerzo,
+            Cena = dia.Cena,
+            Snack = dia.Snack
+        };
     }
 }
