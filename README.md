@@ -19,5 +19,4 @@ Logra es una aplicación de organización personal desarrollada con .NET y SQL S
 ## Demo
 La demostración en video y las capturas de interfaz se encuentran en proceso de implementación.
 
-🌐 **Deploy (Frontend)**  
-https://logra-psi.vercel.app/
+🌐 [Deploy (Frontend)](https://logra-psi.vercel.app/)
