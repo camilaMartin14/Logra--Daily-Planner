@@ -60,12 +60,32 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    function mapBackendToFrontend(backendData) {
+        if (!backendData) return getEmptyDayData();
+        return {
+            id: backendData.id,
+            tasks: [], 
+            mood: backendData.mood,
+            dailyNote: backendData.notaDia,
+            tomorrowNote: backendData.notaManiana,
+            hydration: backendData.aguaConsumida || 0,
+            sleep: backendData.horasSueno || 0,
+            meals: {
+                breakfast: backendData.desayuno || '',
+                lunch: backendData.almuerzo || '',
+                dinner: backendData.cena || '',
+                snack: backendData.snack || ''
+            }
+        };
+    }
+
     async function loadDay() {
         try {
             const dateKey = selectedDate.toISOString().split('T')[0];
             
             if (authToken) {
-                currentDayData = await DayApi.obtenerOCrear(dateKey);
+                const backendDay = await DayApi.obtenerOCrear(dateKey);
+                currentDayData = mapBackendToFrontend(backendDay);
                 
                 if (currentDayData && currentDayData.id) {
                     try {
@@ -98,33 +118,20 @@ document.addEventListener('DOMContentLoaded', () => {
         renderUI();
     }
 
-    function getUsuarioIdFromToken() {
-        if (!authToken) return null;
-        try {
-            const payload = JSON.parse(atob(authToken.split('.')[1]));
-            return payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] || payload.sub;
-        } catch {
-            return null;
-        }
-    }
-
     async function createBackendDay() {
         const dateStr = selectedDate.toISOString().split('T')[0];
         try {
-            const usuarioId = getUsuarioIdFromToken(); 
-        if (!usuarioId) throw new Error("No hay usuario logueado");
+            const result = await apiFetch('/dia', {
+                method: 'POST',
+                body: JSON.stringify({ fecha: dateStr }) 
+            });
 
-        const result = await apiFetch('/dia', {
-            method: 'POST',
-            body: JSON.stringify({ fecha: dateStr, usuarioId }) 
-        });
-
-        return result?.id || null;
-    } catch (e) {
-        console.error("No se pudo crear el día en backend:", e);
-        return null;
+            return result?.id || null;
+        } catch (e) {
+            console.error("No se pudo crear el día en backend:", e);
+            return null;
+        }
     }
-}
 
 
 
@@ -453,7 +460,10 @@ const today = new Date();
 
         if (authToken) {
             try {
-                await TaskApi.actualizar(task.id, { realizada: task.completed });
+                await TaskApi.actualizar(task.id, { 
+                    descripcion: task.text,
+                    realizada: task.completed 
+                });
             } catch (e) {
                 console.error('Error actualizando tarea en backend:', e);
                 alert('No se pudo actualizar la tarea en el servidor.');

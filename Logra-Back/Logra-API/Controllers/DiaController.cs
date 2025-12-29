@@ -59,12 +59,16 @@ namespace Logra_API.Controllers
         }
 
         [Authorize]
-        [HttpGet("usuario/{usuarioId}/fecha/{fecha}")]
-        public async Task<IActionResult> ObtenerOCrearDia(int usuarioId, DateTime fecha)
+        [HttpGet("fecha/{fecha}")]
+        public async Task<IActionResult> ObtenerOCrearDia(DateTime fecha)
         {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type.EndsWith("/nameidentifier"));
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                return Unauthorized();
+
             // Buscar día existente
             var diaExistente = await _context.Dias
-                .FirstOrDefaultAsync(d => d.UsuarioId == usuarioId && d.Fecha == fecha);
+                .FirstOrDefaultAsync(d => d.UsuarioId == userId && d.Fecha == fecha);
 
             if (diaExistente != null)
                 return Ok(diaExistente);
@@ -72,7 +76,7 @@ namespace Logra_API.Controllers
             // Crear nuevo día
             var nuevoDia = new Dia
             {
-                UsuarioId = usuarioId,
+                UsuarioId = userId,
                 Fecha = fecha,
                 AguaConsumida = 0,
                 HorasSueno = 0,
