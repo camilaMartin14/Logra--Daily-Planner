@@ -1,8 +1,19 @@
-# Logra
+# 📈 Logra
 
-Logra es una aplicación de organización personal desarrollada con .NET y SQL Server en el backend, y HTML, CSS y JavaScript en el frontend. Permite planificar y gestionar actividades diarias de forma simple y estructurada.
+Logra es una aplicación de organización personal orientada a la planificación y seguimiento de actividades diarias.  
+Permite centralizar tareas, notas y registros personales en una interfaz simple, con persistencia de datos y control de usuarios.
 
-## Funcionalidades
+El backend está desarrollado en **.NET con SQL Server**, siguiendo una **arquitectura en capas**, mientras que el frontend está implementado con **HTML, CSS y JavaScript**.
+
+---
+
+## 🚀 Demo
+🌐 **Deploy (Frontend):** https://logra-psi.vercel.app/  
+📽️ **Video demostrativo:** https://logra-psi.vercel.app/
+
+---
+
+## ✨ Funcionalidades
 - Gestión de tareas personales (To-Do List)
 - Registro de comidas diarias
 - Notas personalizadas
@@ -11,12 +22,7 @@ Logra es una aplicación de organización personal desarrollada con .NET y SQL S
 - Registro de estados de ánimo
 - Autenticación y autorización mediante JWT
 
-## Tecnologías
-- Backend: .NET, SQL Server, JWT  
-- Frontend: HTML, CSS, JavaScript  
-- Arquitectura en capas: Controllers, Services, Repository y DTOs
+> Nota: las tareas y objetivos se conservan en **localStorage** aun cuando no se persisten en la base de datos, garantizando que el usuario no pierda información ante recargas o cierres del navegador.
 
-## Demo
-La demostración en video y las capturas de interfaz se encuentran en proceso de implementación.
+---
 
-🌐 [Deploy (Frontend)](https://logra-psi.vercel.app/)
