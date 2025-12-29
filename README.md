@@ -7,13 +7,7 @@ El backend está desarrollado en **.NET con SQL Server**, siguiendo una **arquit
 
 ---
 
-## 🚀 Demo
-🌐 **Deploy (Frontend):** https://logra-psi.vercel.app/  
-📽️ **Video demostrativo:** https://logra-psi.vercel.app/
-
----
-
-## ✨ Funcionalidades
+## 📝 Funcionalidades
 - Gestión de tareas personales (To-Do List)
 - Registro de comidas diarias
 - Notas personalizadas
@@ -26,3 +20,6 @@ El backend está desarrollado en **.NET con SQL Server**, siguiendo una **arquit
 
 ---
 
+## 🚀 Demo
+🌐 **Deploy (Frontend):** https://logra-psi.vercel.app/  
+📽️ **Video demostrativo:** https://logra-psi.vercel.app/
