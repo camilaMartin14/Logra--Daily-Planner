@@ -22,4 +22,4 @@ El backend está desarrollado en **.NET con SQL Server**, siguiendo una **arquit
 
 ## 🚀 Demo
 🌐 **Deploy (Frontend):** https://logra-psi.vercel.app/  
-📽️ **Video demostrativo:** https://logra-psi.vercel.app/
+📽️ **Video demostrativo:** https://youtu.be/8V0C4eUF11A
