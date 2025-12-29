@@ -1,6 +1,7 @@
-﻿using Logra_API.Models;
+using Logra_API.Models;
 using Logra_API.Repositories.Implementations;
 using Logra_API.Repositories.Interfaces;
+using Logra_API.Security;
 using Logra_API.Services.Implementations;
 using Logra_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -74,6 +75,7 @@ builder.Services.AddScoped<ITareaRepository, TareaRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IDiaService, DiaService>();
 builder.Services.AddScoped<ITareaService, TareaService>();
+builder.Services.AddScoped<EncryptionService>();
 
 
 builder.Services.AddScoped<JwtTokenGenerator>();

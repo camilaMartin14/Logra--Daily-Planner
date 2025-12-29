@@ -1,17 +1,20 @@
-﻿using Logra_API.DTOs;
+using Logra_API.DTOs;
 using Logra_API.Models;
 using Logra_API.Repositories.Interfaces;
 using Logra_API.Services.Interfaces;
+using Logra_API.Security;
 
 namespace Logra_API.Services.Implementations
 {
     public class DiaService : IDiaService
     {
         private readonly IDiaRepository _repo;
+        private readonly EncryptionService _encryption;
 
-        public DiaService(IDiaRepository repo)
+        public DiaService(IDiaRepository repo, EncryptionService encryption)
         {
             _repo = repo;
+            _encryption = encryption;
         }
 
         public async Task<bool> ModificarDiaAsync(int idDia, DiaUpdateDTO dto)
@@ -22,8 +25,8 @@ namespace Logra_API.Services.Implementations
             dia.AguaConsumida = dto.AguaConsumida;
             dia.HorasSueno = dto.HorasSueno;
             dia.Mood = dto.Mood;
-            dia.NotaDia = dto.NotaDia;
-            dia.NotaManiana = dto.NotaManiana;
+            dia.NotaDia = _encryption.Encrypt(dto.NotaDia);
+            dia.NotaManiana = _encryption.Encrypt(dto.NotaManiana);
             dia.Desayuno = dto.Desayuno;
             dia.Almuerzo = dto.Almuerzo;
             dia.Cena = dto.Cena;
@@ -76,8 +79,8 @@ namespace Logra_API.Services.Implementations
             Id = dia.Id,
             Fecha = dia.Fecha,
             Mood = dia.Mood,
-            NotaDia = dia.NotaDia,
-            NotaManiana = dia.NotaManiana,
+            NotaDia = _encryption.Decrypt(dia.NotaDia),
+            NotaManiana = _encryption.Decrypt(dia.NotaManiana),
             AguaConsumida = dia.AguaConsumida,
             HorasSueno = dia.HorasSueno,
             Desayuno = dia.Desayuno,

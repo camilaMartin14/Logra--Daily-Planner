@@ -1,17 +1,20 @@
-﻿using Logra_API.DTOs;
+using Logra_API.DTOs;
 using Logra_API.Models;
 using Logra_API.Repositories.Interfaces;
 using Logra_API.Services.Interfaces;
+using Logra_API.Security;
 
 namespace Logra_API.Services.Implementations
 {
     public class TareaService : ITareaService
     {
         private readonly ITareaRepository _repo;
+        private readonly EncryptionService _encryption;
 
-        public TareaService(ITareaRepository repo)
+        public TareaService(ITareaRepository repo, EncryptionService encryption)
         {
             _repo = repo;
+            _encryption = encryption;
         }
 
         public async Task<int> CrearTareaAsync(int diaId, TareaCreateDTO dto)
@@ -19,7 +22,7 @@ namespace Logra_API.Services.Implementations
             var tarea = new Tarea
             {
                 DiaId = diaId,
-                Descripcion = dto.Descripcion,
+                Descripcion = _encryption.Encrypt(dto.Descripcion),
                 Realizada = false
             };
 
@@ -36,7 +39,7 @@ namespace Logra_API.Services.Implementations
             var tarea = await _repo.ObtenerTareaPorId(idTarea);
             if (tarea == null) return false;
 
-            tarea.Descripcion = dto.Descripcion;
+            tarea.Descripcion = _encryption.Encrypt(dto.Descripcion);
             tarea.Realizada = dto.Realizada;
 
             return await _repo.ModificarTarea(tarea);
@@ -50,7 +53,7 @@ namespace Logra_API.Services.Implementations
             return new TareaDTO
             {
                 Id = tarea.Id,
-                Descripcion = tarea.Descripcion,
+                Descripcion = _encryption.Decrypt(tarea.Descripcion),
                 Realizada = tarea.Realizada
             };
         }
@@ -63,7 +66,7 @@ namespace Logra_API.Services.Implementations
                 .Select(t => new TareaDTO
                 {
                     Id = t.Id,
-                    Descripcion = t.Descripcion,
+                    Descripcion = _encryption.Decrypt(t.Descripcion),
                     Realizada = t.Realizada
                 })
                 .ToList();
