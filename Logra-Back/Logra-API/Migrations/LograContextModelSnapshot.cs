@@ -60,7 +60,6 @@ namespace Logra_API.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Breakfast")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
@@ -73,31 +72,27 @@ namespace Logra_API.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Dinner")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Lunch")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Mood")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MorningNote")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("SleepHours")
                         .HasColumnType("int");
 
                     b.Property<string>("Snack")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.Property<int>("WaterIntake")
+                    b.Property<int?>("WaterIntake")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
