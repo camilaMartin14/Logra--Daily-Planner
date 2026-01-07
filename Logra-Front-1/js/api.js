@@ -1,18 +1,18 @@
 const API_BASE = 'https://localhost:7271/api';
 
-let authToken = localStorage.getItem('logra_token');
+export let authToken = localStorage.getItem('logra_token');
 
-function setToken(token) {
+export function setToken(token) {
     authToken = token;
     localStorage.setItem('logra_token', token);
 }
 
-function clearToken() {
+export function clearToken() {
     authToken = null;
     localStorage.removeItem('logra_token');
 }
 
-async function apiFetch(url, options = {}) {
+export async function apiFetch(url, options = {}) {
     const headers = {
         'Content-Type': 'application/json',
         ...(authToken && { 'Authorization': `Bearer ${authToken}` })

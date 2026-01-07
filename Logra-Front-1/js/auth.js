@@ -1,17 +1,20 @@
+import { apiFetch, setToken } from './api.js';
+
 async function login(email, password) {
-    const result = await apiFetch('/Usuario/login', {
+    const result = await apiFetch('/auth/login', {
         method: 'POST',
         body: JSON.stringify({
             email,
-            contrasenia: password
+            password
         })
     });
 
     setToken(result.token);
-    return result.usuario;
+    return result.user;
 }
+
 async function register(data) {
-    await apiFetch('/Usuario/registro', {
+    await apiFetch('/auth/register', {
         method: 'POST',
         body: JSON.stringify(data)
     });
@@ -31,8 +34,8 @@ if (loginForm) {
             const usuario = await login(email, password);
             console.log('Login success:', usuario);
 
-            if (usuario && usuario.nombre) {
-                localStorage.setItem('logra_user_name', usuario.nombre);
+            if (usuario && usuario.firstName) {
+                localStorage.setItem('logra_user_name', usuario.firstName);
             } else {
                  localStorage.setItem('logra_user_name', 'Usuario');
             }
@@ -67,8 +70,8 @@ if (registerForm) {
         e.preventDefault();
         console.log('Register form submitted');
 
-        const nombre = document.getElementById('regName').value;
-        const apellido = document.getElementById('regSurname').value;
+        const firstName = document.getElementById('regName').value;
+        const lastName = document.getElementById('regSurname').value;
         const email = document.getElementById('regEmail').value;
         const password = document.getElementById('regPassword').value;
         const confirmPassword = document.getElementById('regConfirmPassword').value;
@@ -79,10 +82,10 @@ if (registerForm) {
         }
 
         const data = {
-            nombre,
-            apellido,
+            firstName,
+            lastName,
             email,
-            contrasenia: password
+            password
         };
 
         try {
