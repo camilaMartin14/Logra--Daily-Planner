@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Http;
 var builder = WebApplication.CreateBuilder(args);
 
 
-// ------------- Jwt Configuration -------------
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 if (!jwtSettings.Exists())
     throw new Exception("JWT configuration not found in appsettings.json");
@@ -46,8 +45,6 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 
-// ------------- CORS Configuration-------------
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -58,8 +55,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ------------- Database Context Configuration --------
-
 builder.Services.AddDbContext<LograContext>(options =>
 {
     options.UseSqlServer(
@@ -68,7 +63,6 @@ builder.Services.AddDbContext<LograContext>(options =>
 });
 
 
-//// ------------- Services -------------
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IDayService, DayService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
@@ -93,7 +87,6 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
         return new BadRequestObjectResult(problemDetails);
     };
 });
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -127,7 +120,6 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

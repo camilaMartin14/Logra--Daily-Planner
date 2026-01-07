@@ -99,37 +99,14 @@ function handleNoteDrop(e) {
             const [movedNote] = allNotes.splice(srcIndex, 1);
             allNotes.splice(targetIndex, 0, movedNote);
             
-            // Persist order
             if (!authToken) {
-                // If using local storage, we just save the reordered array
-                // But wait, local storage might have archived notes too.
-                // 'allNotes' currently contains only filtered notes (active or archived).
-                // We need to reorder the full DB carefully.
-                // Actually, loadNotes sets allNotes to filtered subset.
-                // So if we reorder 'allNotes', we are only reordering the visible subset.
-                // We need to update the master list in localStorage.
-                
                 const db = JSON.parse(localStorage.getItem('logra_notes') || '[]');
-                
-                // We need to reflect the new order in 'db'.
-                // Strategy: remove all 'allNotes' items from 'db', then insert them back in new order?
-                // Or map IDs to new positions?
-                // Simplest: Reconstruct db.
-                // 1. Get items NOT in allNotes (the ones filtered out)
-                // 2. Combine with reordered allNotes.
-                // But we must maintain their relative order if possible or just append.
-                // Usually, dragging is done within the active list.
                 
                 const otherNotes = db.filter(n => !allNotes.some(an => an.id == n.id));
                 const newDb = [...allNotes, ...otherNotes]; 
-                // Note: this puts active notes first, then archived (or vice versa). 
-                // This might change the order of archived notes if we are in active view.
-                // But usually acceptable.
                 
                 localStorage.setItem('logra_notes', JSON.stringify(newDb));
             } else {
-                // Backend persistence for order is not supported yet by API, 
-                // but we can at least update the UI for the session.
                 console.warn("Backend reordering not fully supported yet.");
             }
             
@@ -170,7 +147,6 @@ function renderNotes() {
         col.className = 'col-12 col-sm-6';
         col.dataset.id = note.id; // ID para drag & drop
         
-        // Drag and Drop
         col.setAttribute('draggable', 'true');
         col.addEventListener('dragstart', handleNoteDragStart);
         col.addEventListener('dragenter', handleNoteDragEnter);
@@ -330,6 +306,14 @@ function updateCategorySelectors(cats) {
                 ${c.name}
             </label>
         `;
+        const checkbox = div.querySelector('input');
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                noteCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+            }
+        });
         noteCategoriesContainer.appendChild(div);
     });
 }

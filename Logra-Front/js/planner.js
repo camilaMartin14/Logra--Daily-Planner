@@ -12,11 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentDayData = getEmptyDayData();
     let selectedDate = new Date();
-    let currentFilter = 'all'; // 'all', 'pending', 'completed'
-    let currentCategoryFilter = ''; // '' = all
+    let currentFilter = 'all';
+    let currentCategoryFilter = '';
     let categories = [];
-    let taskCategoriesMap = {}; // taskId -> [Category objects]
-    let taskModal = null; // Bootstrap Modal Instance
+    let taskCategoriesMap = {};
+    let taskModal = null;
 
     const els = {
         currentDate: document.getElementById('current-date'),
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         msgSaveMeals: document.getElementById('msg-save-meals'),
         msgSaveDailyNote: document.getElementById('msg-save-daily-note'),
         msgSaveTomorrowNote: document.getElementById('msg-save-tomorrow-note'),
-        // Task Edit Modal
+        
         taskModalEl: document.getElementById('taskModal'),
         taskForm: document.getElementById('taskForm'),
         taskIdInput: document.getElementById('taskId'),
@@ -117,11 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 text: t.description,
                                 completed: t.isCompleted
                             }));
-                            
-                            // currentDayData.tasks.sort((a, b) => b.id - a.id);
                         }
                         
-                        // Load task categories
                         await loadTaskCategories();
 
                     } catch (err) {
@@ -156,7 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const tasks = await TaskApi.getByCategory(cat.id);
                     tasks.forEach(t => {
                         if (!taskCategoriesMap[t.id]) taskCategoriesMap[t.id] = [];
-                        taskCategoriesMap[t.id].push(cat);
+                        if (!taskCategoriesMap[t.id].some(existing => existing.id === cat.id)) {
+                            taskCategoriesMap[t.id].push(cat);
+                        }
                     });
                 } catch (e) {
                     console.warn(`Failed to fetch tasks for category ${cat.id}`, e);
@@ -281,7 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleTaskDragStart(e) {
         dragSrcEl = this;
         e.dataTransfer.effectAllowed = 'move';
-        // e.dataTransfer.setData('text/html', this.innerHTML);
         this.classList.add('dragging');
     }
 
@@ -360,10 +358,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (visibleTasks.length === 0) {
             els.emptyState.style.display = tasksArray.length === 0 ? 'block' : 'none';
             if (tasksArray.length > 0) {
-                 const li = document.createElement('li');
-                 li.className = 'list-group-item text-center text-muted fst-italic';
-                 li.textContent = 'No hay tareas que coincidan con los filtros.';
-                 els.todoList.appendChild(li);
+                 const existingMsg = els.todoList.querySelector('.no-tasks-msg');
+                 if (!existingMsg) {
+                     const li = document.createElement('li');
+                     li.className = 'list-group-item text-center text-muted fst-italic no-tasks-msg';
+                     li.textContent = 'No hay tareas que coincidan con los filtros.';
+                     els.todoList.appendChild(li);
+                 }
             }
             return;
         }
@@ -391,8 +392,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const deleteAction = `onclick="window.handleDelete(${task.id})"`;
             const editAction = `onclick="window.handleEditTask(${task.id})"`;
 
-            const cats = taskCategoriesMap[task.id] || [];
-            const dots = cats.map(c => 
+            let cats = taskCategoriesMap[task.id] || [];
+            
+            if (currentCategoryFilter) {
+                cats = cats.filter(c => c.id == currentCategoryFilter);
+            }
+
+            const uniqueCats = [];
+            const seenCatIds = new Set();
+            cats.forEach(c => {
+                if (!seenCatIds.has(c.id)) {
+                    seenCatIds.add(c.id);
+                    uniqueCats.push(c);
+                }
+            });
+
+            const dots = uniqueCats.map(c => 
                 `<span class="category-dot" style="background-color: ${c.color};" title="${c.name}"></span>`
             ).join('');
             
@@ -515,10 +530,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     text: t.description,
                     completed: t.isCompleted
                 }));
-                // currentDayData.tasks.sort((a, b) => b.id - a.id); // Removed to allow manual reordering
             }
 
-            await loadTaskCategories(); // Refresh categories map
+            await loadTaskCategories();
 
             await saveCurrentDay();
             renderTasks();
@@ -615,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
         els.moodBtns.forEach(btn => btn.addEventListener('click', () => {
             const selectedMood = btn.getAttribute('data-mood');
             if (currentDayData.mood === selectedMood) {
-                currentDayData.mood = null; // Toggle off
+                currentDayData.mood = null;
             } else {
                 currentDayData.mood = selectedMood;
             }
@@ -649,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedCats = Array.from(els.taskCategoriesContainer.querySelectorAll('input:checked'))
             .map(cb => parseInt(cb.value));
 
-        if (!id) return; // Should allow editing existing only
+        if (!id) return;
 
         if (authToken) {
             try {
@@ -672,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     await TaskApi.removeCategory(id, catId);
                 }
 
-                await loadTaskCategories(); // Refresh map
+                await loadTaskCategories();
                 
                  const backendTasks = await TaskApi.listar(currentDayData.id);
                 if (backendTasks && Array.isArray(backendTasks)) {
@@ -681,7 +695,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         text: t.description,
                         completed: t.isCompleted
                     }));
-                    // currentDayData.tasks.sort((a, b) => b.id - a.id);
                 }
 
             } catch (err) {
@@ -802,6 +815,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     </label>
                 </div>
             `).join('');
+
+            els.taskCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        els.taskCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                            if (cb !== this) cb.checked = false;
+                        });
+                    }
+                });
+            });
+
             document.querySelector('#taskModal .modal-body .mb-3:nth-child(3)').style.display = 'block';
         } else {
              els.taskCategoriesContainer.innerHTML = '';

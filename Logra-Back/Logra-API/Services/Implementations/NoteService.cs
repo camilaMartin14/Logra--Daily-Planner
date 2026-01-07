@@ -47,18 +47,24 @@ public class NoteService : INoteService
 
     public async Task<List<NoteDTO>> GetActiveAsync(int userId)
     {
-        return await _context.Notes
+        var notes = await _context.Notes
+            .Include(n => n.NoteCategories)
+            .ThenInclude(nc => nc.Category)
             .Where(n => n.UserId == userId && !n.IsArchived)
-            .Select(n => MapToDTO(n))
             .ToListAsync();
+
+        return notes.Select(MapToDTO).ToList();
     }
 
     public async Task<List<NoteDTO>> GetArchivedAsync(int userId)
     {
-        return await _context.Notes
+        var notes = await _context.Notes
+            .Include(n => n.NoteCategories)
+            .ThenInclude(nc => nc.Category)
             .Where(n => n.UserId == userId && n.IsArchived)
-            .Select(n => MapToDTO(n))
             .ToListAsync();
+
+        return notes.Select(MapToDTO).ToList();
     }
 
     public async Task<NoteDTO> UpdateAsync(int userId, int noteId, NoteUpdateDTO dto)
@@ -70,7 +76,7 @@ public class NoteService : INoteService
             throw new KeyNotFoundException("Note not found.");
 
         note.Title = dto.Title;
-        note.Content = dto.Content;
+        note.Content = dto.Content ?? string.Empty;
         note.UpdatedDate = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -105,10 +111,16 @@ public class NoteService : INoteService
     public async Task DeleteAsync(int userId, int noteId)
     {
         var note = await _context.Notes
+            .Include(n => n.NoteCategories)
             .FirstOrDefaultAsync(n => n.Id == noteId && n.UserId == userId);
 
         if (note == null)
             throw new KeyNotFoundException("Note not found.");
+
+        if (note.NoteCategories != null && note.NoteCategories.Any())
+        {
+            _context.NoteCategories.RemoveRange(note.NoteCategories);
+        }
 
         _context.Notes.Remove(note);
         await _context.SaveChangesAsync();

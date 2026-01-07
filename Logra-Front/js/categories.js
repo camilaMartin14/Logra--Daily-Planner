@@ -15,7 +15,6 @@ let categoryModal;
 
 export async function loadCategories() {
     if (!authToken) {
-        // Local Storage Mode
         const db = JSON.parse(localStorage.getItem('logra_categories') || '[]');
         categories = db;
         renderCategories();
@@ -25,7 +24,6 @@ export async function loadCategories() {
     try {
         categories = await CategoryApi.getAll();
         renderCategories();
-        // Dispatch event so other modules can update their selectors
         window.dispatchEvent(new CustomEvent('categoriesUpdated', { detail: categories }));
         return categories;
     } catch (e) {
@@ -53,7 +51,6 @@ function renderCategories() {
         categoriesListEl.appendChild(item);
     });
 
-    // Re-attach listeners
     document.querySelectorAll('.btn-edit-cat').forEach(btn => {
         btn.addEventListener('click', () => openEditCategory(btn.dataset.id));
     });
@@ -100,7 +97,6 @@ async function deleteCategory(id) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Enable for everyone
     if (btnNewCategory) {
         categoryModal = new bootstrap.Modal(categoryModalEl);
         
@@ -120,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             if (!authToken) {
-                // Local Storage Save
                 if (id) {
                     const idx = categories.findIndex(c => c.id == id);
                     if (idx !== -1) {

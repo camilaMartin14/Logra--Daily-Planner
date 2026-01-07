@@ -1,4 +1,4 @@
-﻿using Logra_API.Models;
+using Logra_API.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Logra_API.Data
@@ -20,7 +20,6 @@ namespace Logra_API.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // NoteCategory (many-to-many Note <-> Category)
             modelBuilder.Entity<NoteCategory>()
                 .HasKey(nc => new { nc.NoteId, nc.CategoryId });
 
@@ -28,15 +27,14 @@ namespace Logra_API.Data
                 .HasOne(nc => nc.Note)
                 .WithMany(n => n.NoteCategories)
                 .HasForeignKey(nc => nc.NoteId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<NoteCategory>()
                 .HasOne(nc => nc.Category)
                 .WithMany(c => c.NoteCategories)
                 .HasForeignKey(nc => nc.CategoryId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // TaskCategory (many-to-many TaskItem <-> Category)
             modelBuilder.Entity<TaskCategory>()
                 .HasKey(tc => new { tc.TaskItemId, tc.CategoryId });
 
@@ -44,13 +42,13 @@ namespace Logra_API.Data
                 .HasOne(tc => tc.TaskItem)
                 .WithMany(t => t.TaskCategories)
                 .HasForeignKey(tc => tc.TaskItemId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<TaskCategory>()
                 .HasOne(tc => tc.Category)
                 .WithMany(c => c.TaskCategories)
                 .HasForeignKey(tc => tc.CategoryId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

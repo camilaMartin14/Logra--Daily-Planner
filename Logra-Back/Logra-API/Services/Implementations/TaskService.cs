@@ -92,10 +92,16 @@ public class TaskService : ITaskService
     {
         var task = await _context.Tasks
             .Include(t => t.Day)
+            .Include(t => t.TaskCategories)
             .FirstOrDefaultAsync(t => t.Id == taskId && t.Day.UserId == userId);
 
         if (task == null)
             throw new KeyNotFoundException("Task not found.");
+
+        if (task.TaskCategories != null && task.TaskCategories.Any())
+        {
+            _context.TaskCategories.RemoveRange(task.TaskCategories);
+        }
 
         _context.Tasks.Remove(task);
         await _context.SaveChangesAsync();
