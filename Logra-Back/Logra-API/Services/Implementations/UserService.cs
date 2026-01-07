@@ -10,10 +10,12 @@ namespace Logra_API.Services.Implementations;
 public class UserService : IUserService
 {
     private readonly LograContext _context;
+    private readonly JwtTokenGenerator _jwt;
 
-    public UserService(LograContext context)
+    public UserService(LograContext context, JwtTokenGenerator jwt)
     {
         _context = context;
+        _jwt = jwt;
     }
 
     public async Task<UserDTO> RegisterAsync(UserRegisterDTO dto)
@@ -38,14 +40,20 @@ public class UserService : IUserService
         return MapToDTO(user);
     }
 
-    public async Task<UserDTO> LoginAsync(string email, string password)
+    public async Task<AuthResponseDTO> LoginAsync(string email, string password)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
         if (user == null || !PasswordHasher.Verify(password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid credentials.");
 
-        return MapToDTO(user);
+        var token = _jwt.GenerateToken(user);
+
+        return new AuthResponseDTO
+        {
+            Token = token,
+            User = MapToDTO(user)
+        };
     }
 
     public async Task<UserDTO> GetByEmailAsync(string email)

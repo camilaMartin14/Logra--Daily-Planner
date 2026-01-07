@@ -4,7 +4,7 @@ namespace Logra_API.Services.Interfaces;
 
 public interface IUserService
 {
-    Task<UserDTO> LoginAsync(string email, string password);
+    Task<AuthResponseDTO> LoginAsync(string email, string password);
 
     Task<UserDTO> RegisterAsync(UserRegisterDTO dto);
 
