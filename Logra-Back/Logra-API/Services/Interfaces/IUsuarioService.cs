@@ -1,10 +1,10 @@
 ﻿using Logra_API.DTOs;
 
-public interface IUsuarioService
+public interface IUserService
 {
-    Task<UsuarioDTO?> LoginAsync(string email, string contrasenia);
-    Task<UsuarioDTO?> ObtenerUsuarioPorEmailAsync(string email);
-    Task<UsuarioDTO?> ObtenerUsuarioPorIdAsync(int idUsuario);
-    Task<int> RegistrarUsuarioAsync(UsuarioRegistroDTO dto);
+    Task<UserDTO?> LoginAsync(string email, string password);
+    Task<UserDTO?> GetUserByEmailAsync(string email);
+    Task<UserDTO?> GetUserByIdAsync(int userId);
+    Task<int> RegisterUserAsync(UserRegisterDTO dto);
 }
 

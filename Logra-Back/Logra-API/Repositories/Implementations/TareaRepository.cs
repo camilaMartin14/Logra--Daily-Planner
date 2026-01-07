@@ -4,56 +4,92 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Logra_API.Repositories.Implementations
 {
-    public class TareaRepository : ITareaRepository
+    public class TaskRepository : ITaskRepository
     {
         private readonly LograContext _context;
 
-        public TareaRepository(LograContext context)
+        public TaskRepository(LograContext context)
         {
             _context = context;
         }
 
-        public async Task<int> CrearTarea(Tarea tarea)
+        public async Task<int> CreateTask(TaskItem task)
         {
-            _context.Tareas.Add(tarea);
+            _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
-            return tarea.Id;
+            return task.Id;
         }
 
-        public async Task<bool> EliminarTarea(int idTarea)
+        public async Task<bool> DeleteTask(int taskId)
         {
-            var tarea = await _context.Tareas.FindAsync(idTarea);
-            if (tarea == null)
+            var task = await _context.Tasks.FindAsync(taskId);
+            if (task == null)
                 return false;
 
-            _context.Tareas.Remove(tarea);
+            _context.Tasks.Remove(task);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<bool> ModificarTarea(Tarea tarea)
+        public async Task<bool> UpdateTask(TaskItem task)
         {
-            var tareaExistente = await _context.Tareas.FindAsync(tarea.Id);
-            if (tareaExistente == null)
+            var existingTask = await _context.Tasks.FindAsync(task.Id);
+            if (existingTask == null)
                 return false;
 
-            tareaExistente.Descripcion = tarea.Descripcion;
-            tareaExistente.Realizada = tarea.Realizada;
+            existingTask.Description = task.Description;
+            existingTask.IsCompleted = task.IsCompleted;
 
             await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<Tarea?> ObtenerTareaPorId(int idTarea)
+        public async Task<TaskItem?> GetTaskById(int taskId)
         {
-            return await _context.Tareas.FindAsync(idTarea);
+            return await _context.Tasks.FindAsync(taskId);
         }
 
-        public async Task<List<Tarea>> ObtenerTareasPorDia(int diaId)
+        public async Task<List<TaskItem>> GetTasksByDay(int dayId)
         {
-            return await _context.Tareas
-                .Where(t => t.DiaId == diaId)
-                .OrderBy(t => t.FechaCreacion)
+            return await _context.Tasks
+                .Where(t => t.DayId == dayId)
+                .OrderBy(t => t.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task AddCategoryToTaskAsync(int taskId, int categoryId)
+        {
+            var existing = await _context.TaskCategories.FirstOrDefaultAsync(tc => tc.TaskItemId == taskId && tc.CategoryId == categoryId);
+            if (existing != null) return;
+
+            var taskCategory = new TaskCategory
+            {
+                TaskItemId = taskId,
+                CategoryId = categoryId
+            };
+            _context.TaskCategories.Add(taskCategory);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task RemoveCategoryFromTaskAsync(int taskId, int categoryId)
+        {
+            var taskCategory = await _context.TaskCategories
+                .FirstOrDefaultAsync(tc => tc.TaskItemId == taskId && tc.CategoryId == categoryId);
+            if (taskCategory != null)
+            {
+                _context.TaskCategories.Remove(taskCategory);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<List<TaskItem>> GetTasksByCategoryAsync(int userId, int categoryId)
+        {
+            return await _context.Tasks
+                .Include(t => t.TaskCategories)
+                .ThenInclude(tc => tc.Category)
+                .Include(t => t.Day)
+                .Where(t => t.Day.UserId == userId && t.TaskCategories.Any(tc => tc.CategoryId == categoryId))
+                .OrderBy(t => t.CreatedDate)
                 .ToListAsync();
         }
     }

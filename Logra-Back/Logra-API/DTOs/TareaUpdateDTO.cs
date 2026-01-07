@@ -1,8 +1,12 @@
-﻿namespace Logra_API.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Logra_API.DTOs
 {
-    public class TareaUpdateDTO
+    public class TaskUpdateDTO
     {
-        public string Descripcion { get; set; } = string.Empty;
-        public bool Realizada { get; set; }
+        [Required]
+        [MaxLength(200)]
+        public string Description { get; set; } = string.Empty;
+        public bool IsCompleted { get; set; }
     }
 }

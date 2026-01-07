@@ -1,7 +1,11 @@
-﻿namespace Logra_API.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Logra_API.DTOs
 {
-    public class TareaCreateDTO
+    public class TaskCreateDTO
     {
-        public string Descripcion { get; set; } = string.Empty;
+        [Required]
+        [MaxLength(200)]
+        public string Description { get; set; } = string.Empty;
     }
 }

@@ -6,87 +6,88 @@ using Logra_API.Security;
 
 namespace Logra_API.Services.Implementations
 {
-    public class DiaService : IDiaService
+    public class DayService : IDayService
     {
-        private readonly IDiaRepository _repo;
+        private readonly IDayRepository _repo;
         private readonly EncryptionService _encryption;
 
-        public DiaService(IDiaRepository repo, EncryptionService encryption)
+        public DayService(IDayRepository repo, EncryptionService encryption)
         {
             _repo = repo;
             _encryption = encryption;
         }
 
-        public async Task<bool> ModificarDiaAsync(int idDia, DiaUpdateDTO dto)
+        public async Task<bool> UpdateDayAsync(int dayId, DayUpdateDTO dto)
         {
-            var dia = await _repo.ObtenerDiaPorId(idDia);
-            if (dia == null) return false;
+            var day = await _repo.GetDayById(dayId);
+            if (day == null) return false;
 
-            dia.AguaConsumida = dto.AguaConsumida;
-            dia.HorasSueno = dto.HorasSueno;
-            dia.Mood = dto.Mood;
-            dia.NotaDia = _encryption.Encrypt(dto.NotaDia);
-            dia.NotaManiana = _encryption.Encrypt(dto.NotaManiana);
-            dia.Desayuno = dto.Desayuno;
-            dia.Almuerzo = dto.Almuerzo;
-            dia.Cena = dto.Cena;
-            dia.Snack = dto.Snack;
+            day.WaterIntake = dto.WaterIntake;
+            day.SleepHours = dto.SleepHours;
+            day.Mood = dto.Mood;
+            day.DailyNote = _encryption.Encrypt(dto.DailyNote);
+            day.MorningNote = _encryption.Encrypt(dto.MorningNote);
+            day.Breakfast = dto.Breakfast;
+            day.Lunch = dto.Lunch;
+            day.Dinner = dto.Dinner;
+            day.Snack = dto.Snack;
 
-            return await _repo.ModificarDia(dia);
+            return await _repo.UpdateDay(day);
         }
 
-        public async Task<DiaDTO?> ObtenerDiaPorIdAsync(int idDia)
+        public async Task<DayDTO?> GetDayByIdAsync(int dayId)
         {
-            var dia = await _repo.ObtenerDiaPorId(idDia);
-            if (dia == null) return null;
+            var day = await _repo.GetDayById(dayId);
+            if (day == null) return null;
 
-            return MapToDTO(dia);
+            return MapToDTO(day);
         }
 
-        public async Task<DiaDTO> ObtenerOCrearDiaAsync(int usuarioId)
+        public async Task<DayDTO> GetOrCreateDayAsync(int userId)
         {
-            var fechaHoy = DateTime.Today;
+            var today = DateTime.Today;
 
-            var dia = await _repo.ObtenerDiaPorUsuarioYFecha(usuarioId, fechaHoy);
-            if (dia == null)
+            var day = await _repo.GetDayByUserAndDate(userId, today);
+            if (day == null)
             {
-                dia = CrearDiaPorDefecto(usuarioId, fechaHoy);
-                dia.Id = await _repo.CrearDia(dia);
+                day = CreateDefaultDay(userId, today);
+                day.Id = await _repo.CreateDay(day);
             }
 
-            return MapToDTO(dia);
+            return MapToDTO(day);
         }
 
-        private Dia CrearDiaPorDefecto(int usuarioId, DateTime fecha)
+        private Day CreateDefaultDay(int userId, DateTime date)
         {
-            return new Dia
+            return new Day
             {
-                Fecha = fecha,
+                UserId = userId,
+                Date = date,
                 Mood = "",
-                NotaDia = "",
-                NotaManiana = "",
-                AguaConsumida = 0,
-                HorasSueno = 0,
-                Desayuno = "",
-                Almuerzo = "",
-                Cena = "",
+                DailyNote = "",
+                MorningNote = "",
+                WaterIntake = 0,
+                SleepHours = 0,
+                Breakfast = "",
+                Lunch = "",
+                Dinner = "",
                 Snack = ""
             };
         }
 
-        private DiaDTO MapToDTO(Dia dia) => new DiaDTO
+        private DayDTO MapToDTO(Day day) => new DayDTO
         {
-            Id = dia.Id,
-            Fecha = dia.Fecha,
-            Mood = dia.Mood,
-            NotaDia = _encryption.Decrypt(dia.NotaDia),
-            NotaManiana = _encryption.Decrypt(dia.NotaManiana),
-            AguaConsumida = dia.AguaConsumida,
-            HorasSueno = dia.HorasSueno,
-            Desayuno = dia.Desayuno,
-            Almuerzo = dia.Almuerzo,
-            Cena = dia.Cena,
-            Snack = dia.Snack
+            Id = day.Id,
+            Date = day.Date,
+            Mood = day.Mood,
+            DailyNote = _encryption.Decrypt(day.DailyNote),
+            MorningNote = _encryption.Decrypt(day.MorningNote),
+            WaterIntake = day.WaterIntake,
+            SleepHours = day.SleepHours,
+            Breakfast = day.Breakfast,
+            Lunch = day.Lunch,
+            Dinner = day.Dinner,
+            Snack = day.Snack
         };
     }
 }

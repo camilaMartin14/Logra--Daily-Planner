@@ -1,25 +1,25 @@
 ﻿namespace Logra_API.DTOs
 {
-    public class DiaDTO
+    public class DayDTO
     {
         public int Id { get; set; }
-        public DateTime Fecha { get; set; }
+        public DateTime Date { get; set; }
 
         public string? Mood { get; set; } = string.Empty;
 
-        public string? NotaDia { get; set; } = string.Empty;
+        public string? DailyNote { get; set; } = string.Empty;
 
-        public string? NotaManiana { get; set; } = string.Empty;
+        public string? MorningNote { get; set; } = string.Empty;
 
-        public int? AguaConsumida { get; set; }
+        public int? WaterIntake { get; set; }
 
-        public int? HorasSueno { get; set; }
+        public int? SleepHours { get; set; }
 
-        public string? Desayuno { get; set; } = string.Empty;
+        public string? Breakfast { get; set; } = string.Empty;
 
-        public string? Almuerzo { get; set; } = string.Empty;
+        public string? Lunch { get; set; } = string.Empty;
 
-        public string? Cena { get; set; } = string.Empty;
+        public string? Dinner { get; set; } = string.Empty;
 
         public string? Snack { get; set; } = string.Empty;
     }

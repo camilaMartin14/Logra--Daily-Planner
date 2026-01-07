@@ -10,24 +10,24 @@ namespace Logra_API.Controllers
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class DiaController : ControllerBase
+    public class DayController : ControllerBase
     {
-        private readonly IDiaService _service;
+        private readonly IDayService _service;
         private readonly LograContext _context;
 
-        public DiaController(IDiaService service, LograContext context)
+        public DayController(IDayService service, LograContext context)
         {
             _service = service;
             _context = context;
         }
 
         [HttpPost]
-        public async Task<IActionResult> CrearDia([FromBody] DiaDTO dto)
+        public async Task<IActionResult> CreateDay([FromBody] DayDTO dto)
         {
-            if (dto.Fecha == default)
-                return BadRequest("Fecha requerida");
+            if (dto.Date == default)
+                return BadRequest("Date required");
 
-            // Obtener UserId del token
+            // Get UserId from token
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type.EndsWith("/nameidentifier"));
             if (userIdClaim == null)
                 return Unauthorized();
@@ -35,71 +35,71 @@ namespace Logra_API.Controllers
             if (!int.TryParse(userIdClaim.Value, out int userId))
                 return Unauthorized();
 
-            // Verificar que el usuario exista
-            var userExists = await _context.Usuarios.AnyAsync(u => u.Id == userId);
+            // Verify user exists
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
             if (!userExists)
-                return BadRequest("Usuario no encontrado");
+                return BadRequest("User not found");
 
-            var dia = new Dia { Fecha = dto.Fecha, UsuarioId = userId };
-            _context.Dias.Add(dia);
+            var day = new Day { Date = dto.Date, UserId = userId };
+            _context.Days.Add(day);
             await _context.SaveChangesAsync();
 
-            return Ok(new { id = dia.Id });
+            return Ok(new { id = day.Id });
         }
 
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> ObtenerPorId(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var dia = await _service.ObtenerDiaPorIdAsync(id);
-            if (dia == null)
+            var day = await _service.GetDayByIdAsync(id);
+            if (day == null)
                 return NotFound();
 
-            return Ok(dia);
+            return Ok(day);
         }
 
         [Authorize]
-        [HttpGet("fecha/{fecha}")]
-        public async Task<IActionResult> ObtenerOCrearDia(DateTime fecha)
+        [HttpGet("date/{date}")]
+        public async Task<IActionResult> GetOrCreateByDate(DateTime date)
         {
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type.EndsWith("/nameidentifier"));
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
                 return Unauthorized();
 
-            // Buscar día existente
-            var diaExistente = await _context.Dias
-                .FirstOrDefaultAsync(d => d.UsuarioId == userId && d.Fecha == fecha);
+            // Search for existing day
+            var existingDay = await _context.Days
+                .FirstOrDefaultAsync(d => d.UserId == userId && d.Date == date);
 
-            if (diaExistente != null)
-                return Ok(diaExistente);
+            if (existingDay != null)
+                return Ok(existingDay);
 
-            // Crear nuevo día
-            var nuevoDia = new Dia
+            // Create new day
+            var newDay = new Day
             {
-                UsuarioId = userId,
-                Fecha = fecha,
-                AguaConsumida = 0,
-                HorasSueno = 0,
+                UserId = userId,
+                Date = date,
+                WaterIntake = 0,
+                SleepHours = 0,
                 Mood = null,
-                NotaDia = null,
-                NotaManiana = null,
-                Desayuno = null,
-                Almuerzo = null,
-                Cena = null,
+                DailyNote = null,
+                MorningNote = null,
+                Breakfast = null,
+                Lunch = null,
+                Dinner = null,
                 Snack = null
             };
 
-            _context.Dias.Add(nuevoDia);
+            _context.Days.Add(newDay);
             await _context.SaveChangesAsync();
 
-            return Ok(nuevoDia);
+            return Ok(newDay);
         }
 
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Actualizar(int id, [FromBody] DiaUpdateDTO dto)
+        public async Task<IActionResult> Update(int id, [FromBody] DayUpdateDTO dto)
         {
-            var ok = await _service.ModificarDiaAsync(id, dto);
+            var ok = await _service.UpdateDayAsync(id, dto);
             if (!ok)
                 return NotFound();
 

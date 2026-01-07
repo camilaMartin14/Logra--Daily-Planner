@@ -4,38 +4,38 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Logra_API.Repositories.Implementations
 {
-    public class DiaRepository : IDiaRepository
+    public class DayRepository : IDayRepository
     {
         private readonly LograContext _context;
 
-        public DiaRepository(LograContext context)
+        public DayRepository(LograContext context)
         {
             _context = context;
         }
 
-        public async Task<int> CrearDia(Dia dia)
+        public async Task<int> CreateDay(Day day)
         {
-            _context.Dias.Add(dia);
+            _context.Days.Add(day);
             await _context.SaveChangesAsync();
-            return dia.Id;
+            return day.Id;
         }
 
-        public async Task<bool> ModificarDia(Dia dia)
+        public async Task<bool> UpdateDay(Day day)
         {
-            _context.Dias.Update(dia);
+            _context.Days.Update(day);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<Dia?> ObtenerDiaPorId(int idDia)
+        public async Task<Day?> GetDayById(int dayId)
         {
-            return await _context.Dias.FindAsync(idDia);
+            return await _context.Days.FindAsync(dayId);
         }
 
-        public async Task<Dia?> ObtenerDiaPorUsuarioYFecha(int usuarioId, DateTime fecha)
+        public async Task<Day?> GetDayByUserAndDate(int userId, DateTime date)
         {
-            return await _context.Dias
-                .FirstOrDefaultAsync(d => d.UsuarioId == usuarioId && d.Fecha == fecha);
+            return await _context.Days
+                .FirstOrDefaultAsync(d => d.UserId == userId && d.Date == date);
         }
     }
 }

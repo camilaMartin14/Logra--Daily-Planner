@@ -2,63 +2,96 @@
 using Logra_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Logra_API.Controllers
 {
     [Authorize]
     [ApiController]
     [Route("api")]
-    public class TareaController : ControllerBase
+    public class TaskController : ControllerBase
     {
-        private readonly ITareaService _service;
+        private readonly ITaskService _service;
 
-        public TareaController(ITareaService service)
+        public TaskController(ITaskService service)
         {
             _service = service;
         }
 
-        [HttpPost("dias/{diaId}/tareas")]
-        public async Task<IActionResult> Crear(int diaId, [FromBody] TareaCreateDTO dto)
+        private int GetUserId()
         {
-            var id = await _service.CrearTareaAsync(diaId, dto);
-            return CreatedAtAction(nameof(ObtenerPorId), new { id }, null);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdClaim?.Value, out var userId))
+                throw new UnauthorizedAccessException("Invalid user ID in token");
+            return userId;
         }
 
-        [HttpGet("dias/{diaId}/tareas")]
-        public async Task<IActionResult> ObtenerPorDia(int diaId)
+        [HttpPost("days/{dayId}/tasks")]
+        public async Task<IActionResult> Create(int dayId, [FromBody] TaskCreateDTO dto)
         {
-            var tareas = await _service.ObtenerTareasPorDiaAsync(diaId);
-            return Ok(tareas);
+            var id = await _service.CreateTaskAsync(dayId, dto);
+            return CreatedAtAction(nameof(GetById), new { id }, null);
         }
 
-        [HttpGet("tareas/{id}")]
-        public async Task<IActionResult> ObtenerPorId(int id)
+        [HttpGet("days/{dayId}/tasks")]
+        public async Task<IActionResult> GetByDay(int dayId)
         {
-            var tarea = await _service.ObtenerTareaPorIdAsync(id);
-            if (tarea == null)
+            var tasks = await _service.GetTasksByDayAsync(dayId);
+            return Ok(tasks);
+        }
+
+        [HttpGet("tasks/{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var task = await _service.GetTaskByIdAsync(id);
+            if (task == null)
                 return NotFound();
 
-            return Ok(tarea);
+            return Ok(task);
         }
 
-        [HttpPut("tareas/{id}")]
-        public async Task<IActionResult> Actualizar(int id, [FromBody] TareaUpdateDTO dto)
+        [HttpPut("tasks/{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] TaskUpdateDTO dto)
         {
-            var ok = await _service.ActualizarTareaAsync(id, dto);
+            var ok = await _service.UpdateTaskAsync(id, dto);
             if (!ok)
                 return NotFound();
 
             return NoContent();
         }
 
-        [HttpDelete("tareas/{id}")]
-        public async Task<IActionResult> Eliminar(int id)
+        [HttpDelete("tasks/{id}")]
+        public async Task<IActionResult> Delete(int id)
         {
-            var ok = await _service.EliminarTareaAsync(id);
+            var ok = await _service.DeleteTaskAsync(id);
             if (!ok)
                 return NotFound();
 
             return NoContent();
+        }
+
+        [HttpPost("tasks/{taskId}/categories/{categoryId}")]
+        public async Task<IActionResult> AddCategoryToTask(int taskId, int categoryId)
+        {
+            var userId = GetUserId();
+            await _service.AddCategoryToTaskAsync(userId, taskId, categoryId);
+            return NoContent();
+        }
+
+        [HttpDelete("tasks/{taskId}/categories/{categoryId}")]
+        public async Task<IActionResult> RemoveCategoryFromTask(int taskId, int categoryId)
+        {
+            var userId = GetUserId();
+            await _service.RemoveCategoryFromTaskAsync(userId, taskId, categoryId);
+            return NoContent();
+        }
+
+        [HttpGet("tasks/category/{categoryId}")]
+        public async Task<IActionResult> GetTasksByCategory(int categoryId)
+        {
+            var userId = GetUserId();
+            var tasks = await _service.GetTasksByCategoryAsync(userId, categoryId);
+            return Ok(tasks);
         }
     }
 }

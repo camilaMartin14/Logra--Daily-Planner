@@ -2,11 +2,11 @@
 
 namespace Logra_API.Repositories.Interfaces
 {
-    public interface IDiaRepository
+    public interface IDayRepository
     {
-        Task <int> CrearDia(Dia dia);
-        Task <Dia?> ObtenerDiaPorId(int idDia);
-        Task <Dia?> ObtenerDiaPorUsuarioYFecha(int usuarioId, DateTime fecha);
-        Task <bool> ModificarDia(Dia dia);
+        Task <int> CreateDay(Day day);
+        Task <Day?> GetDayById(int dayId);
+        Task <Day?> GetDayByUserAndDate(int userId, DateTime date);
+        Task <bool> UpdateDay(Day day);
     }
 }

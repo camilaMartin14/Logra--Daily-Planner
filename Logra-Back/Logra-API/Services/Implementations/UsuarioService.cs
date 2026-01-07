@@ -6,77 +6,77 @@ using Logra_API.Services.Interfaces;
 
 namespace Logra_API.Services.Implementations
 {
-    public class UsuarioService : IUsuarioService
+    public class UserService : IUserService
     {
-        private readonly IUsuarioRepository _repo;
+        private readonly IUserRepository _repo;
 
-        public UsuarioService(IUsuarioRepository repo)
+        public UserService(IUserRepository repo)
         {
             _repo = repo;
         }
 
-        public async Task<UsuarioDTO?> LoginAsync(string email, string contrasenia)
+        public async Task<UserDTO?> LoginAsync(string email, string password)
         {
-            var usuario = await _repo.ObtenerUsuarioPorEmail(email);
-            if (usuario == null)
+            var user = await _repo.GetUserByEmail(email);
+            if (user == null)
                 return null;
 
-            if (!PasswordHasher.Verify(contrasenia, usuario.ContraseniaHash))
+            if (!PasswordHasher.Verify(password, user.PasswordHash))
                 return null;
 
-            return new UsuarioDTO
+            return new UserDTO
             {
-                Id = usuario.Id,
-                Email = usuario.Email,
-                Nombre = usuario.Nombre,
-                Apellido = usuario.Apellido,
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
             };
         }
 
-        public async Task<UsuarioDTO?> ObtenerUsuarioPorEmailAsync(string email)
+        public async Task<UserDTO?> GetUserByEmailAsync(string email)
         {
-            var usuario = await _repo.ObtenerUsuarioPorEmail(email);
-            if (usuario == null) return null;
+            var user = await _repo.GetUserByEmail(email);
+            if (user == null) return null;
 
-            return new UsuarioDTO
+            return new UserDTO
             {
-                Id = usuario.Id,
-                Email = usuario.Email,
-                Nombre = usuario.Nombre,
-                Apellido = usuario.Apellido,
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
             };
         }
 
-        public async Task<UsuarioDTO?> ObtenerUsuarioPorIdAsync(int idUsuario)
+        public async Task<UserDTO?> GetUserByIdAsync(int userId)
         {
-            var usuario = await _repo.ObtenerUsuarioPorId(idUsuario);
-            if (usuario == null) return null;
+            var user = await _repo.GetUserById(userId);
+            if (user == null) return null;
 
-            return new UsuarioDTO
+            return new UserDTO
             {
-                Id = usuario.Id,
-                Email = usuario.Email,
-                Nombre = usuario.Nombre,
-                Apellido = usuario.Apellido,
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
             };
         }
 
-        public async Task<int> RegistrarUsuarioAsync(UsuarioRegistroDTO dto)
+        public async Task<int> RegisterUserAsync(UserRegisterDTO dto)
         {
-            var existente = await _repo.ObtenerUsuarioPorEmail(dto.Email);
-            if (existente != null)
-                throw new Exception("El email ya está registrado");
+            var existing = await _repo.GetUserByEmail(dto.Email);
+            if (existing != null)
+                throw new Exception("Email already registered");
 
-            var usuario = new Usuario
+            var user = new User
             {
                 Email = dto.Email,
-                Nombre = dto.Nombre,
-                Apellido = dto.Apellido,
-                FechaRegistro = DateTime.UtcNow,
-                ContraseniaHash = PasswordHasher.Hash(dto.Contrasenia)
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                RegistrationDate = DateTime.UtcNow,
+                PasswordHash = PasswordHasher.Hash(dto.Password)
             };
 
-            return await _repo.RegistrarUsuario(usuario);
+            return await _repo.RegisterUser(user);
         }
     }
 }
