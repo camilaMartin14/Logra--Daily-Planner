@@ -197,6 +197,16 @@ h1, h2, h3, h4, h5, h6 {
     border-bottom: none;
 }
 
+.category-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
 .form-check-input {
     width: 1.4em;
     height: 1.4em;
@@ -221,15 +231,20 @@ h1, h2, h3, h4, h5, h6 {
     color: #b0b0b0;
 }
 
-.delete-btn {
+.delete-btn,
+.edit-btn {
     opacity: 0;
     transition: opacity 0.2s;
+}
+
+.delete-btn {
     color: #e57373;
     background: none;
     border: none;
 }
 
-.list-group-item:hover .delete-btn {
+.list-group-item:hover .delete-btn,
+.list-group-item:hover .edit-btn {
     opacity: 1;
 }
 
@@ -280,7 +295,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .read-only-mode .planner-btn, 
-.read-only-mode .delete-btn {
+.read-only-mode .delete-btn,
+.read-only-mode .edit-btn {
     display: none !important;
 }
 
@@ -354,4 +370,31 @@ h1, h2, h3, h4, h5, h6 {
     color: #888;
     margin-bottom: 0.2rem;
     font-weight: 500;
+}
+
+.bg-daily-note {
+    background-color: rgba(0, 0, 0, 0.02) !important; 
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Drag and Drop Styles */
+.dragging {
+    opacity: 0.5;
+    background-color: #fafafa !important;
+    border: 1px dashed var(--primary-color) !important;
+}
+
+.over {
+    border-top: 2px solid var(--primary-color) !important;
+    transform: translateY(2px);
+}
+
+.note-card.dragging {
+    transform: scale(0.95);
+    box-shadow: none !important;
+}
+
+/* Ensure list items are relative for positioning effects */
+.list-group-item {
+    position: relative;
 }

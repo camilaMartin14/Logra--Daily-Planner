@@ -1,6 +1,5 @@
+using Logra_API.Data;
 using Logra_API.Models;
-using Logra_API.Repositories.Implementations;
-using Logra_API.Repositories.Interfaces;
 using Logra_API.Security;
 using Logra_API.Services.Implementations;
 using Logra_API.Services.Interfaces;
@@ -9,14 +8,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-// ------------- Jwt -------------
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 if (!jwtSettings.Exists())
-    throw new Exception("Configuraci�n JWT no encontrada en appsettings.json");
+    throw new Exception("JWT configuration not found in appsettings.json");
 
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
 
@@ -44,9 +45,6 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 
-
-// ------------- CORS -------------
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -57,8 +55,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ------------- DbContext -------------
-
 builder.Services.AddDbContext<LograContext>(options =>
 {
     options.UseSqlServer(
@@ -66,15 +62,12 @@ builder.Services.AddDbContext<LograContext>(options =>
     );
 });
 
-// ------------- Repositories -------------
-builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-builder.Services.AddScoped<IDiaRepository, DiaRepository>();
-builder.Services.AddScoped<ITareaRepository, TareaRepository>();
 
-// ------------- Services -------------
-builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-builder.Services.AddScoped<IDiaService, DiaService>();
-builder.Services.AddScoped<ITareaService, TareaService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IDayService, DayService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<INoteService, NoteService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<EncryptionService>();
 
 
@@ -82,7 +75,18 @@ builder.Services.AddScoped<JwtTokenGenerator>();
 
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var problemDetails = new ValidationProblemDetails(context.ModelState)
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "One or more validation errors occurred."
+        };
+        return new BadRequestObjectResult(problemDetails);
+    };
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -93,7 +97,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Ingrese el token JWT"
+        Description = "Enter the JWT token"
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -116,12 +120,29 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/problem+json";
+        var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        var pd = new ProblemDetails
+        {
+            Status = StatusCodes.Status500InternalServerError,
+            Title = "An unexpected error occurred."
+        };
+        if (ex != null)
+            pd.Detail = ex.Message;
+        await context.Response.WriteAsJsonAsync(pd);
+    });
+});
 
 app.UseCors("AllowFrontend");
 

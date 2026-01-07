@@ -1,41 +1,49 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+﻿using Logra_API.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 
-public class JwtTokenGenerator
+namespace Logra_API.Security
 {
-    private readonly IConfiguration _config;
-
-    public JwtTokenGenerator(IConfiguration config)
+    public class JwtTokenGenerator
     {
-        _config = config;
-    }
+        private readonly IConfiguration _config;
 
-    public string GenerateToken(int userId, string email)
-    {
-        var claims = new[]
+        public JwtTokenGenerator(IConfiguration config)
         {
-            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-            new Claim(ClaimTypes.Email, email)
-        };
+            _config = config;
+        }
 
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
-        );
+        public string GenerateToken(User user)
+        {
+            var jwtSettings = _config.GetSection("Jwt");
 
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSettings["Key"]!)
+            );
 
-        var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(
-                int.Parse(_config["Jwt:ExpireMinutes"]!)
-            ),
-            signingCredentials: creds
-        );
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(
+                    double.Parse(jwtSettings["ExpireMinutes"]!)
+                ),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
     }
 }

@@ -1,3 +1,8 @@
+import { apiFetch, clearToken, authToken } from './api.js';
+import { DayApi } from './dayApi.js';
+import { TaskApi } from './taskApi.js';
+import { CategoryApi } from './categoryApi.js';
+
 document.addEventListener('DOMContentLoaded', () => { 
     const MOOD_MAP = {
         'happy': '¡Me siento feliz!',
@@ -8,6 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentDayData = getEmptyDayData();
     let selectedDate = new Date();
     let currentFilter = 'all';
+    let currentCategoryFilter = '';
+    let categories = [];
+    let taskCategoriesMap = {};
+    let taskModal = null;
 
     const els = {
         currentDate: document.getElementById('current-date'),
@@ -15,17 +24,18 @@ document.addEventListener('DOMContentLoaded', () => {
         nextDayBtn: document.getElementById('next-day-btn'),
         dayStatus: document.getElementById('day-status-indicator'),
         taskInput: document.getElementById('new-task-input'),
+        taskCategoryInput: document.getElementById('new-task-category'),
+        taskCategoryFilter: document.getElementById('task-category-filter'),
         addTaskBtn: document.getElementById('add-task-btn'),
         todoList: document.getElementById('todo-list'),
         emptyState: document.getElementById('empty-state'),
-        filterBtns: document.querySelectorAll('.filter-btn'),
+        filterBtns: document.querySelectorAll('.filter-btn[data-filter]'),
         countAll: document.getElementById('count-all'),
         countPending: document.getElementById('count-pending'),
         countCompleted: document.getElementById('count-completed'),
         moodBtns: document.querySelectorAll('.mood-btn'),
         moodText: document.getElementById('selected-mood-text'),
         dailyNote: document.getElementById('daily-note'),
-        tomorrowNote: document.getElementById('tomorrow-note'),
         contentWrapper: document.querySelector('.content-wrapper'),
         hydrationContainer: document.getElementById('hydration-container'),
         sleepContainer: document.getElementById('sleep-container'),
@@ -45,7 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSaveTomorrowNote: document.getElementById('btn-save-tomorrow-note'),
         msgSaveMeals: document.getElementById('msg-save-meals'),
         msgSaveDailyNote: document.getElementById('msg-save-daily-note'),
-        msgSaveTomorrowNote: document.getElementById('msg-save-tomorrow-note')
+        msgSaveTomorrowNote: document.getElementById('msg-save-tomorrow-note'),
+        
+        taskModalEl: document.getElementById('taskModal'),
+        taskForm: document.getElementById('taskForm'),
+        taskIdInput: document.getElementById('taskId'),
+        taskDescInput: document.getElementById('taskDescription'),
+        taskCategoriesContainer: document.getElementById('task-categories-selection')
     };
 
     function getEmptyDayData() {
@@ -66,14 +82,14 @@ document.addEventListener('DOMContentLoaded', () => {
             id: backendData.id,
             tasks: [], 
             mood: backendData.mood,
-            dailyNote: backendData.notaDia,
-            tomorrowNote: backendData.notaManiana,
-            hydration: backendData.aguaConsumida || 0,
-            sleep: backendData.horasSueno || 0,
+            dailyNote: backendData.dailyNote,
+            tomorrowNote: backendData.morningNote,
+            hydration: backendData.waterIntake || 0,
+            sleep: backendData.sleepHours || 0,
             meals: {
-                breakfast: backendData.desayuno || '',
-                lunch: backendData.almuerzo || '',
-                dinner: backendData.cena || '',
+                breakfast: backendData.breakfast || '',
+                lunch: backendData.lunch || '',
+                dinner: backendData.dinner || '',
                 snack: backendData.snack || ''
             }
         };
@@ -87,16 +103,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const backendDay = await DayApi.obtenerOCrear(dateKey);
                 currentDayData = mapBackendToFrontend(backendDay);
                 
+                if (backendDay.date) {
+                    selectedDate = new Date(backendDay.date);
+                    renderHeader(); 
+                }
+
                 if (currentDayData && currentDayData.id) {
                     try {
                         const backendTasks = await TaskApi.listar(currentDayData.id);
                         if (backendTasks && Array.isArray(backendTasks)) {
                             currentDayData.tasks = backendTasks.map(t => ({
                                 id: t.id,
-                                text: t.descripcion,
-                                completed: t.realizada
+                                text: t.description,
+                                completed: t.isCompleted
                             }));
                         }
+                        
+                        await loadTaskCategories();
+
                     } catch (err) {
                         console.error("Error cargando tareas:", err);
                     }
@@ -113,62 +137,76 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentDayData) currentDayData = getEmptyDayData();
         if (!Array.isArray(currentDayData.tasks)) currentDayData.tasks = [];
         
-        if (!currentDayData.id) currentDayData.id = authToken ? await createBackendDay() : Date.now();
+        if (!currentDayData.id && !authToken) currentDayData.id = Date.now();
         
         renderUI();
     }
 
-    async function createBackendDay() {
-        const dateStr = selectedDate.toISOString().split('T')[0];
-        try {
-            const result = await apiFetch('/dia', {
-                method: 'POST',
-                body: JSON.stringify({ fecha: dateStr }) 
+    async function loadTaskCategories() {
+        if (categories.length === 0) return;
+        
+        taskCategoriesMap = {};
+        
+        if (authToken) {
+            const promises = categories.map(async cat => {
+                try {
+                    const tasks = await TaskApi.getByCategory(cat.id);
+                    tasks.forEach(t => {
+                        if (!taskCategoriesMap[t.id]) taskCategoriesMap[t.id] = [];
+                        if (!taskCategoriesMap[t.id].some(existing => existing.id === cat.id)) {
+                            taskCategoriesMap[t.id].push(cat);
+                        }
+                    });
+                } catch (e) {
+                    console.warn(`Failed to fetch tasks for category ${cat.id}`, e);
+                }
             });
 
-            return result?.id || null;
-        } catch (e) {
-            console.error("No se pudo crear el día en backend:", e);
-            return null;
+            await Promise.all(promises);
+        } else {
+            const localMap = JSON.parse(localStorage.getItem('logra_task_categories') || '{}');
+            Object.keys(localMap).forEach(taskId => {
+                const catIds = localMap[taskId];
+                if (Array.isArray(catIds)) {
+                    taskCategoriesMap[taskId] = catIds.map(id => categories.find(c => c.id == id)).filter(Boolean);
+                }
+            });
         }
     }
-
-
 
     async function saveCurrentDay() {
-
-    if (!currentDayData.meals) {
-        currentDayData.meals = {
-            breakfast: '',
-            lunch: '',
-            dinner: '',
-            snack: ''
-        };
-    }
-
-    if (authToken) {
-        if (currentDayData.id) {
-            await DayApi.actualizar(currentDayData.id, {
-                aguaConsumida: currentDayData.hydration,
-                horasSueno: currentDayData.sleep,
-                mood: currentDayData.mood,
-                notaDia: currentDayData.dailyNote,
-                notaManiana: currentDayData.tomorrowNote,
-                desayuno: currentDayData.meals.breakfast,
-                almuerzo: currentDayData.meals.lunch,
-                cena: currentDayData.meals.dinner,
-                snack: currentDayData.meals.snack
-            });
+        if (!currentDayData.meals) {
+            currentDayData.meals = {
+                breakfast: '',
+                lunch: '',
+                dinner: '',
+                snack: ''
+            };
         }
-    } else {
-        const db = JSON.parse(localStorage.getItem('logra_db') || '{}');
-        const dateKey = selectedDate.toISOString().split('T')[0];
-        db[dateKey] = currentDayData;
-        localStorage.setItem('logra_db', JSON.stringify(db));
-    }
 
-    updateStats();
-}
+        if (authToken) {
+            if (currentDayData.id) {
+                await DayApi.actualizar(currentDayData.id, {
+                    waterIntake: currentDayData.hydration,
+                    sleepHours: currentDayData.sleep,
+                    mood: currentDayData.mood,
+                    dailyNote: currentDayData.dailyNote,
+                    morningNote: currentDayData.tomorrowNote,
+                    breakfast: currentDayData.meals.breakfast,
+                    lunch: currentDayData.meals.lunch,
+                    dinner: currentDayData.meals.dinner,
+                    snack: currentDayData.meals.snack
+                });
+            }
+        } else {
+            const db = JSON.parse(localStorage.getItem('logra_db') || '{}');
+            const dateKey = selectedDate.toISOString().split('T')[0];
+            db[dateKey] = currentDayData;
+            localStorage.setItem('logra_db', JSON.stringify(db));
+        }
+
+        updateStats();
+    }
 
 
     function renderUI() {
@@ -177,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMood();
         renderWellness();
         renderMeals();
-        renderNotes();
+        renderDailyTextareas();
         updateStats();
         updateFilterUI();
         applyDayStatusStyles();
@@ -186,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderHeader() {
         els.currentDate.textContent = selectedDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         
-const today = new Date();
+        const today = new Date();
         const isToday = selectedDate.toDateString() === today.toDateString();
         
         const tomorrow = new Date(today);
@@ -205,25 +243,21 @@ const today = new Date();
 
     function applyDayStatusStyles() {
         const today = new Date();
-        
         today.setHours(0, 0, 0, 0);
         const selected = new Date(selectedDate);
         selected.setHours(0, 0, 0, 0);
 
- if (selected < today) {
-            
+        if (selected < today) {
             els.contentWrapper.classList.add('read-only-mode');
             els.contentWrapper.classList.remove('future-mode');
             els.taskInput.placeholder = "Día pasado (Solo lectura)";
             disableInputs(true);
- } else if (selected > today) {
-             
-             els.contentWrapper.classList.remove('read-only-mode');
-             els.contentWrapper.classList.add('future-mode');
-             els.taskInput.placeholder = "Planifica para el futuro...";
-             disableInputs(false);
-} else {
-            
+        } else if (selected > today) {
+            els.contentWrapper.classList.remove('read-only-mode');
+            els.contentWrapper.classList.add('future-mode');
+            els.taskInput.placeholder = "Planifica para el futuro...";
+            disableInputs(false);
+        } else {
             els.contentWrapper.classList.remove('read-only-mode', 'future-mode');
             els.taskInput.placeholder = "Escribe una nueva tarea...";
             disableInputs(false);
@@ -231,9 +265,70 @@ const today = new Date();
     }
 
     function disableInputs(disabled) {
-        els.contentWrapper.querySelectorAll('input, textarea, select').forEach(i => i.disabled = disabled);
+        els.contentWrapper.querySelectorAll('input, textarea, select').forEach(i => {
+            // No deshabilitar elementos dentro de la lista de tareas
+            if (i.closest('#todo-list')) return;
+            i.disabled = disabled;
+        });
         els.taskInput.disabled = disabled;
         els.addTaskBtn.disabled = disabled;
+        document.querySelectorAll('.auth-teaser button').forEach(b => b.disabled = false);
+    }
+
+    let dragSrcEl = null;
+
+    function handleTaskDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        this.classList.add('dragging');
+    }
+
+    function handleTaskDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+
+    function handleTaskDragEnter(e) {
+        this.classList.add('over');
+    }
+
+    function handleTaskDragLeave(e) {
+        this.classList.remove('over');
+    }
+
+    function handleTaskDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+
+        if (dragSrcEl !== this) {
+            const srcId = dragSrcEl.dataset.id;
+            const targetId = this.dataset.id;
+
+            // Encontrar índices en el array original
+            const srcIndex = currentDayData.tasks.findIndex(t => t.id == srcId);
+            const targetIndex = currentDayData.tasks.findIndex(t => t.id == targetId);
+
+            if (srcIndex >= 0 && targetIndex >= 0) {
+                // Mover elemento
+                const [movedTask] = currentDayData.tasks.splice(srcIndex, 1);
+                currentDayData.tasks.splice(targetIndex, 0, movedTask);
+                
+                saveCurrentDay();
+                renderTasks();
+            }
+        }
+        return false;
+    }
+
+    function handleTaskDragEnd(e) {
+        this.classList.remove('dragging');
+        els.todoList.querySelectorAll('.list-group-item').forEach(item => {
+            item.classList.remove('over');
+        });
     }
 
     function renderTasks() {
@@ -246,7 +341,13 @@ const today = new Date();
         } else if (currentFilter === 'completed') {
             visibleTasks = visibleTasks.filter(t => t.completed);
         }
-        
+
+        if (currentCategoryFilter && authToken) {
+            visibleTasks = visibleTasks.filter(t => {
+                const cats = taskCategoriesMap[t.id] || [];
+                return cats.some(c => c.id == currentCategoryFilter);
+            });
+        }
         
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -257,28 +358,74 @@ const today = new Date();
         if (visibleTasks.length === 0) {
             els.emptyState.style.display = tasksArray.length === 0 ? 'block' : 'none';
             if (tasksArray.length > 0) {
-                const msg = document.createElement('div');
-                msg.className = 'text-center py-4 text-muted fst-italic';
-                msg.textContent = '¡Todo completado!';
-                els.todoList.appendChild(msg);
+                 const existingMsg = els.todoList.querySelector('.no-tasks-msg');
+                 if (!existingMsg) {
+                     const li = document.createElement('li');
+                     li.className = 'list-group-item text-center text-muted fst-italic no-tasks-msg';
+                     li.textContent = 'No hay tareas que coincidan con los filtros.';
+                     els.todoList.appendChild(li);
+                 }
             }
             return;
         }
         els.emptyState.style.display = 'none';
+
         visibleTasks.forEach(task => {
             const li = document.createElement('li');
             li.className = `list-group-item ${task.completed ? 'completed-task' : ''}`;
+            li.dataset.id = task.id; // ID para drag & drop
             
+            if (!isReadOnly) {
+                li.setAttribute('draggable', 'true');
+                li.addEventListener('dragstart', handleTaskDragStart);
+                li.addEventListener('dragenter', handleTaskDragEnter);
+                li.addEventListener('dragover', handleTaskDragOver);
+                li.addEventListener('dragleave', handleTaskDragLeave);
+                li.addEventListener('drop', handleTaskDrop);
+                li.addEventListener('dragend', handleTaskDragEnd);
+                li.style.cursor = 'grab';
+            }
+
+            // Permitir interacción con tareas incluso en días pasados
+            const checkboxAttr = '';
+            const actionStyle = '';
+            const deleteAction = `onclick="window.handleDelete(${task.id})"`;
+            const editAction = `onclick="window.handleEditTask(${task.id})"`;
+
+            let cats = taskCategoriesMap[task.id] || [];
             
-            const checkboxAttr = isReadOnly ? 'disabled' : '';
-            const deleteBtnStyle = isReadOnly ? 'display: none;' : '';
-            const deleteAction = isReadOnly ? '' : `onclick="window.handleDelete(${task.id})"`;
+            if (currentCategoryFilter) {
+                cats = cats.filter(c => c.id == currentCategoryFilter);
+            }
+
+            const uniqueCats = [];
+            const seenCatIds = new Set();
+            cats.forEach(c => {
+                if (!seenCatIds.has(c.id)) {
+                    seenCatIds.add(c.id);
+                    uniqueCats.push(c);
+                }
+            });
+
+            const dots = uniqueCats.map(c => 
+                `<span class="category-dot" style="background-color: ${c.color};" title="${c.name}"></span>`
+            ).join('');
+            
+            const editButton = `
+                <button class="btn btn-link text-secondary p-0 me-2 edit-btn" ${editAction} style="${actionStyle}" title="Editar">
+                    <i class="bi bi-pencil-square"></i>
+                </button>
+            `;
 
             li.innerHTML = `
                 <div class="d-flex align-items-center w-100">
                     <input class="form-check-input rounded-circle" type="checkbox" ${task.completed ? 'checked' : ''} ${checkboxAttr} onchange="window.handleToggle(${task.id})">
-                    <span class="todo-text flex-grow-1">${escapeHtml(task.text)}</span>
-                    <button class="delete-btn" ${deleteAction} style="${deleteBtnStyle}" title="Eliminar">
+                    <div class="flex-grow-1 ms-2 d-flex align-items-center">
+                        ${dots}
+                        <span class="todo-text">${escapeHtml(task.text)}</span>
+                    </div>
+                    ${editButton}
+                    <button class="delete-btn" ${deleteAction} style="${actionStyle}" title="Eliminar">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -305,9 +452,8 @@ const today = new Date();
         els.moodText.textContent = currentDayData.mood ? MOOD_MAP[currentDayData.mood] : '';
     }
 
-    function renderNotes() {
+    function renderDailyTextareas() {
         els.dailyNote.value = currentDayData.dailyNote || '';
-        els.tomorrowNote.value = currentDayData.tomorrowNote || '';
     }
 
     function renderWellness() {
@@ -332,22 +478,28 @@ const today = new Date();
     }
 
     function renderMeals() {
-    Object.keys(els.mealInputs).forEach(key => {
-        els.mealInputs[key].value = currentDayData.meals?.[key] || '';
-    });
-}
+        Object.keys(els.mealInputs).forEach(key => {
+            els.mealInputs[key].value = currentDayData.meals?.[key] || '';
+        });
+    }
 
-
-    
     async function handleAddTask() {
         const text = els.taskInput.value.trim();
+        const categoryId = els.taskCategoryInput.value;
         if (!text) return;
-
-        const todayKey = selectedDate.toISOString().split('T')[0];
 
         if (!authToken) {
             if (!currentDayData.id) currentDayData.id = Date.now();
-            currentDayData.tasks.unshift({ id: Date.now(), text, completed: false });
+            const newTask = { id: Date.now(), text, completed: false };
+            currentDayData.tasks.unshift(newTask);
+            
+            if (categoryId) {
+                 const localMap = JSON.parse(localStorage.getItem('logra_task_categories') || '{}');
+                 localMap[newTask.id] = [parseInt(categoryId)];
+                 localStorage.setItem('logra_task_categories', JSON.stringify(localMap));
+                 await loadTaskCategories(); 
+            }
+            
             await saveCurrentDay();
             renderTasks();
             els.taskInput.value = '';
@@ -355,27 +507,32 @@ const today = new Date();
         }
 
         if (!currentDayData.id) {
-            currentDayData.id = await createBackendDay();
-            if (!currentDayData.id) {
-                alert("No se pudo crear el día en el servidor.");
-                return;
-            }
+             try {
+                const day = await DayApi.obtenerOCrear(selectedDate.toISOString().split('T')[0]);
+                currentDayData.id = day.id;
+             } catch(e) {
+                 alert("Error sincronizando día con servidor.");
+                 return;
+             }
         }
 
         try {
-            await TaskApi.crear(currentDayData.id, text);
+            const newTask = await TaskApi.crear(currentDayData.id, text);
             
+            if (categoryId) {
+                await TaskApi.addCategory(newTask.id, categoryId);
+            }
             
             const backendTasks = await TaskApi.listar(currentDayData.id);
             if (backendTasks && Array.isArray(backendTasks)) {
                 currentDayData.tasks = backendTasks.map(t => ({
                     id: t.id,
-                    text: t.descripcion,
-                    completed: t.realizada
+                    text: t.description,
+                    completed: t.isCompleted
                 }));
-                
-                currentDayData.tasks.sort((a, b) => b.id - a.id);
             }
+
+            await loadTaskCategories();
 
             await saveCurrentDay();
             renderTasks();
@@ -405,8 +562,47 @@ const today = new Date();
     }
 
     function changeDate(offset) {
+        if (authToken) {
+        }
         selectedDate.setDate(selectedDate.getDate() + offset);
         loadDay();
+    }
+
+    function setupNavigation() {
+        els.navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const viewName = link.dataset.view;
+                
+                els.navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                Object.values(els.views).forEach(el => el.classList.add('d-none'));
+                if (els.views[viewName]) {
+                    els.views[viewName].classList.remove('d-none');
+                }
+            });
+        });
+    }
+
+    function updateCategorySelectors(cats) {
+        categories = cats;
+        
+        els.taskCategoryInput.innerHTML = '<option value="">Sin categoría</option>';
+        cats.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            els.taskCategoryInput.appendChild(opt);
+        });
+
+        els.taskCategoryFilter.innerHTML = '<option value="">Todas las cat.</option>';
+        cats.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            els.taskCategoryFilter.appendChild(opt);
+        });
     }
 
     function setupEventListeners() {
@@ -421,16 +617,106 @@ const today = new Date();
             });
         });
 
+        if (els.taskCategoryFilter) {
+            els.taskCategoryFilter.addEventListener('change', () => {
+                currentCategoryFilter = els.taskCategoryFilter.value;
+                renderTasks();
+            });
+        }
+
         els.addTaskBtn.addEventListener('click', handleAddTask);
         els.taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleAddTask(); });
-        els.moodBtns.forEach(btn => btn.addEventListener('click', () => { currentDayData.mood = btn.getAttribute('data-mood'); saveCurrentDay(); renderMood(); }));
+        els.moodBtns.forEach(btn => btn.addEventListener('click', () => {
+            const selectedMood = btn.getAttribute('data-mood');
+            if (currentDayData.mood === selectedMood) {
+                currentDayData.mood = null;
+            } else {
+                currentDayData.mood = selectedMood;
+            }
+            saveCurrentDay();
+            renderMood();
+        }));
         els.dailyNote.addEventListener('input', e => { currentDayData.dailyNote = e.target.value; if (!authToken) saveCurrentDay(); });
-        els.tomorrowNote.addEventListener('input', e => { currentDayData.tomorrowNote = e.target.value; if (!authToken) saveCurrentDay(); });
+
         Object.keys(els.mealInputs).forEach(key => els.mealInputs[key].addEventListener('input', e => { currentDayData.meals[key] = e.target.value; if (!authToken) saveCurrentDay(); }));
         if (els.btnSaveMeals) els.btnSaveMeals.addEventListener('click', async () => { await saveCurrentDay(); showSuccessMessage(els.msgSaveMeals); });
         if (els.btnSaveDailyNote) els.btnSaveDailyNote.addEventListener('click', async () => { await saveCurrentDay(); showSuccessMessage(els.msgSaveDailyNote); });
         if (els.btnSaveTomorrowNote) els.btnSaveTomorrowNote.addEventListener('click', async () => { await saveCurrentDay(); showSuccessMessage(els.msgSaveTomorrowNote); });
         if (els.btnLogout) els.btnLogout.addEventListener('click', () => { clearToken(); localStorage.removeItem('logra_user_name'); location.reload(); });
+        
+        window.addEventListener('categoriesUpdated', async (e) => {
+            updateCategorySelectors(e.detail);
+            await loadTaskCategories();
+            renderTasks();
+        });
+
+        if (els.taskForm) {
+            els.taskForm.addEventListener('submit', handleTaskSubmit);
+        }
+    }
+
+    async function handleTaskSubmit(e) {
+        e.preventDefault();
+        const id = els.taskIdInput.value;
+        const description = els.taskDescInput.value;
+
+        const selectedCats = Array.from(els.taskCategoriesContainer.querySelectorAll('input:checked'))
+            .map(cb => parseInt(cb.value));
+
+        if (!id) return;
+
+        if (authToken) {
+            try {
+                const task = currentDayData.tasks.find(t => t.id == id);
+                if (task) {
+                    await TaskApi.actualizar(id, {
+                        description: description,
+                        isCompleted: task.completed
+                    });
+                }
+
+                const currentCats = (taskCategoriesMap[id] || []).map(c => c.id);
+                const toAdd = selectedCats.filter(id => !currentCats.includes(id));
+                const toRemove = currentCats.filter(id => !selectedCats.includes(id));
+
+                for (const catId of toAdd) {
+                    await TaskApi.addCategory(id, catId);
+                }
+                for (const catId of toRemove) {
+                    await TaskApi.removeCategory(id, catId);
+                }
+
+                await loadTaskCategories();
+                
+                 const backendTasks = await TaskApi.listar(currentDayData.id);
+                if (backendTasks && Array.isArray(backendTasks)) {
+                    currentDayData.tasks = backendTasks.map(t => ({
+                        id: t.id,
+                        text: t.description,
+                        completed: t.isCompleted
+                    }));
+                }
+
+            } catch (err) {
+                console.error("Error actualizando tarea:", err);
+                alert("Error actualizando tarea.");
+            }
+        } else {
+             const task = currentDayData.tasks.find(t => t.id == id);
+             if (task) {
+                 task.text = description;
+                 
+                 const localMap = JSON.parse(localStorage.getItem('logra_task_categories') || '{}');
+                 localMap[id] = selectedCats; 
+                 localStorage.setItem('logra_task_categories', JSON.stringify(localMap));
+                 
+                 await loadTaskCategories();
+                 await saveCurrentDay();
+             }
+        }
+
+        if (taskModal) taskModal.hide();
+        renderTasks();
     }
 
     function showSuccessMessage(el) {
@@ -449,6 +735,11 @@ const today = new Date();
     async function init() {
         updateAuthUI();
         setupEventListeners();
+        if (typeof bootstrap !== 'undefined') {
+            if (els.taskModalEl) {
+                taskModal = new bootstrap.Modal(els.taskModalEl);
+            }
+        }
         await loadDay();
     }
 
@@ -461,8 +752,8 @@ const today = new Date();
         if (authToken) {
             try {
                 await TaskApi.actualizar(task.id, { 
-                    descripcion: task.text,
-                    realizada: task.completed 
+                    description: task.text,
+                    isCompleted: task.completed 
                 });
             } catch (e) {
                 console.error('Error actualizando tarea en backend:', e);
@@ -492,10 +783,56 @@ const today = new Date();
                 alert('No se pudo eliminar la tarea en el servidor.');
                 currentDayData.tasks.splice(index, 0, removed); 
             }
+        } else {
+            const localMap = JSON.parse(localStorage.getItem('logra_task_categories') || '{}');
+            if (localMap[removed.id]) {
+                delete localMap[removed.id];
+                localStorage.setItem('logra_task_categories', JSON.stringify(localMap));
+                await loadTaskCategories();
+            }
         }
 
         await saveCurrentDay();
         renderTasks();
+    };
+
+    window.handleEditTask = function(taskId) {
+        const task = currentDayData.tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        els.taskIdInput.value = task.id;
+        els.taskDescInput.value = task.text;
+
+        if (authToken && categories.length > 0) {
+            const taskCats = taskCategoriesMap[task.id] || [];
+            const taskCatIds = taskCats.map(c => c.id);
+
+            els.taskCategoriesContainer.innerHTML = categories.map(cat => `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="${cat.id}" id="task-cat-${cat.id}" ${taskCatIds.includes(cat.id) ? 'checked' : ''}>
+                    <label class="form-check-label badge rounded-pill text-white" for="task-cat-${cat.id}" style="background-color: ${cat.color}; cursor: pointer;">
+                        ${cat.name}
+                    </label>
+                </div>
+            `).join('');
+
+            els.taskCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        els.taskCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                            if (cb !== this) cb.checked = false;
+                        });
+                    }
+                });
+            });
+
+            document.querySelector('#taskModal .modal-body .mb-3:nth-child(3)').style.display = 'block';
+        } else {
+             els.taskCategoriesContainer.innerHTML = '';
+             document.querySelector('#taskModal .modal-body .mb-3:nth-child(3)').style.display = 'none';
+        }
+
+        if (taskModal) taskModal.show();
     };
 
     init();
