@@ -15,19 +15,19 @@ public partial class Day
 
     public string? DailyNote { get; set; }
 
-    public string MorningNote { get; set; }
+    public string? MorningNote { get; set; }
 
-    public int WaterIntake { get; set; }
+    public int? WaterIntake { get; set; }
 
     public int? SleepHours { get; set; }
 
-    public string Breakfast { get; set; }
+    public string? Breakfast { get; set; }
 
-    public string Lunch { get; set; }
+    public string? Lunch { get; set; }
 
-    public string Dinner { get; set; }
+    public string? Dinner { get; set; }
 
-    public string Snack { get; set; }
+    public string? Snack { get; set; }
 
     public DateTime CreatedDate { get; set; }
 

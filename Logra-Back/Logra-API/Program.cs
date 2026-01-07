@@ -1,10 +1,8 @@
 using Logra_API.Data;
 using Logra_API.Models;
-//using Logra_API.Repositories.Implementations;
-//using Logra_API.Repositories.Interfaces;
 using Logra_API.Security;
-//using Logra_API.Services.Implementations;
-//using Logra_API.Services.Interfaces;
+using Logra_API.Services.Implementations;
+using Logra_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -69,19 +67,13 @@ builder.Services.AddDbContext<LograContext>(options =>
     );
 });
 
-//// ------------- Repository Configuration --------
-//builder.Services.AddScoped<IUserRepository, UserRepository>();
-//builder.Services.AddScoped<IDayRepository, DayRepository>();
-//builder.Services.AddScoped<ITaskRepository, TaskRepository>();
-//builder.Services.AddScoped<INoteRepository, NoteRepository>();
-//builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 
 //// ------------- Services -------------
-//builder.Services.AddScoped<IUserService, UserService>();
-//builder.Services.AddScoped<IDayService, DayService>();
-//builder.Services.AddScoped<ITaskService, TaskService>();
-//builder.Services.AddScoped<INoteService, NoteService>();
-//builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IDayService, DayService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<INoteService, NoteService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<EncryptionService>();
 
 
