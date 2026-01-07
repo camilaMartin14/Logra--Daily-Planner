@@ -22,6 +22,20 @@ const btnFilterArchived = document.getElementById('filter-archived-notes');
 
 let noteModal;
 
+async function fetchCategories() {
+    if (!authToken) {
+        const db = JSON.parse(localStorage.getItem('logra_categories') || '[]');
+        updateCategorySelectors(db);
+    } else {
+        try {
+            const cats = await CategoryApi.getAll();
+            updateCategorySelectors(cats);
+        } catch (e) {
+            console.error('Error fetching categories for notes:', e);
+        }
+    }
+}
+
 async function loadNotes() {
     if (!authToken) {
         const db = JSON.parse(localStorage.getItem('logra_notes') || '[]');
@@ -43,6 +57,93 @@ async function loadNotes() {
     } catch (e) {
         console.error('Error loading notes:', e);
     }
+}
+
+let dragSrcNoteEl = null;
+
+function handleNoteDragStart(e) {
+    dragSrcNoteEl = this;
+    e.dataTransfer.effectAllowed = 'move';
+    this.classList.add('dragging');
+}
+
+function handleNoteDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleNoteDragEnter(e) {
+    this.classList.add('over');
+}
+
+function handleNoteDragLeave(e) {
+    this.classList.remove('over');
+}
+
+function handleNoteDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+
+    if (dragSrcNoteEl !== this) {
+        const srcId = dragSrcNoteEl.dataset.id;
+        const targetId = this.dataset.id;
+
+        const srcIndex = allNotes.findIndex(n => n.id == srcId);
+        const targetIndex = allNotes.findIndex(n => n.id == targetId);
+
+        if (srcIndex >= 0 && targetIndex >= 0) {
+            const [movedNote] = allNotes.splice(srcIndex, 1);
+            allNotes.splice(targetIndex, 0, movedNote);
+            
+            // Persist order
+            if (!authToken) {
+                // If using local storage, we just save the reordered array
+                // But wait, local storage might have archived notes too.
+                // 'allNotes' currently contains only filtered notes (active or archived).
+                // We need to reorder the full DB carefully.
+                // Actually, loadNotes sets allNotes to filtered subset.
+                // So if we reorder 'allNotes', we are only reordering the visible subset.
+                // We need to update the master list in localStorage.
+                
+                const db = JSON.parse(localStorage.getItem('logra_notes') || '[]');
+                
+                // We need to reflect the new order in 'db'.
+                // Strategy: remove all 'allNotes' items from 'db', then insert them back in new order?
+                // Or map IDs to new positions?
+                // Simplest: Reconstruct db.
+                // 1. Get items NOT in allNotes (the ones filtered out)
+                // 2. Combine with reordered allNotes.
+                // But we must maintain their relative order if possible or just append.
+                // Usually, dragging is done within the active list.
+                
+                const otherNotes = db.filter(n => !allNotes.some(an => an.id == n.id));
+                const newDb = [...allNotes, ...otherNotes]; 
+                // Note: this puts active notes first, then archived (or vice versa). 
+                // This might change the order of archived notes if we are in active view.
+                // But usually acceptable.
+                
+                localStorage.setItem('logra_notes', JSON.stringify(newDb));
+            } else {
+                // Backend persistence for order is not supported yet by API, 
+                // but we can at least update the UI for the session.
+                console.warn("Backend reordering not fully supported yet.");
+            }
+            
+            renderNotes();
+        }
+    }
+    return false;
+}
+
+function handleNoteDragEnd(e) {
+    this.classList.remove('dragging');
+    notesListEl.querySelectorAll('.col-12').forEach(item => {
+        item.classList.remove('over');
+    });
 }
 
 function renderNotes() {
@@ -67,25 +168,45 @@ function renderNotes() {
     filtered.forEach(note => {
         const col = document.createElement('div');
         col.className = 'col-12 col-sm-6';
+        col.dataset.id = note.id; // ID para drag & drop
+        
+        // Drag and Drop
+        col.setAttribute('draggable', 'true');
+        col.addEventListener('dragstart', handleNoteDragStart);
+        col.addEventListener('dragenter', handleNoteDragEnter);
+        col.addEventListener('dragover', handleNoteDragOver);
+        col.addEventListener('dragleave', handleNoteDragLeave);
+        col.addEventListener('drop', handleNoteDrop);
+        col.addEventListener('dragend', handleNoteDragEnd);
+        col.style.cursor = 'grab';
         
         let badges = '';
-        if (note.categories) {
+        let noteColor = '#ffffff';
+        let titleStyle = 'color: #333;'; // Negro por defecto
+
+        if (note.categories && note.categories.length > 0) {
+            // Usar el color de la primera categoría
+            noteColor = note.categories[0].color;
+            titleStyle = 'color: #333;'; // Título oscuro
+            
             badges = note.categories.map(c => 
-                `<span class="badge rounded-pill me-1 text-white" style="background-color: ${c.color}; font-size: 0.65em;">${escapeHtml(c.name)}</span>`
+                `<span class="badge rounded-pill me-1 text-white" style="background-color: rgba(0,0,0,0.2); font-size: 0.65em;">${escapeHtml(c.name)}</span>`
             ).join('');
         }
 
         const archiveIcon = currentFilter === 'active' ? 'bi-archive' : 'bi-archive-fill';
         const archiveTitle = currentFilter === 'active' ? 'Archivar' : 'Desarchivar';
 
+        // Determinar si el color de fondo es oscuro para ajustar el texto
+        
         col.innerHTML = `
-            <div class="card h-100 shadow-sm border-0 bg-light note-card">
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-start mb-1">
-                        <h6 class="card-title mb-0 text-truncate fw-bold" style="max-width: 85%; font-size: 0.95rem;">${escapeHtml(note.title)}</h6>
+            <div class="card h-100 shadow-sm border-0 note-card" style="background-color: ${noteColor}; transition: transform 0.2s; min-height: 220px;">
+                <div class="card-body p-3 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title mb-0 fw-bold" style="${titleStyle} font-size: 1.1rem;">${escapeHtml(note.title)}</h6>
                         <div class="dropdown">
                             <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown" style="line-height: 1;">
-                                <i class="bi bi-three-dots-vertical" style="font-size: 0.85rem;"></i>
+                                <i class="bi bi-three-dots-vertical" style="font-size: 1rem;"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                 <li><a class="dropdown-item btn-edit-note small" href="#" data-id="${note.id}"><i class="bi bi-pencil me-2"></i>Editar</a></li>
@@ -95,7 +216,7 @@ function renderNotes() {
                             </ul>
                         </div>
                     </div>
-                    <p class="card-text text-muted small note-content-preview mb-2" style="font-size: 0.85rem; line-height: 1.4;">${escapeHtml(note.content || '')}</p>
+                    <div class="note-content-preview mb-3 flex-grow-1" style="font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(note.content || '')}</div>
                     <div class="mt-auto">
                         ${badges}
                     </div>
@@ -310,6 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCategorySelectors(e.detail);
         });
 
+        fetchCategories();
         loadNotes();
     }
 });

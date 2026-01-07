@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 completed: t.isCompleted
                             }));
                             
-                            currentDayData.tasks.sort((a, b) => b.id - a.id);
+                            // currentDayData.tasks.sort((a, b) => b.id - a.id);
                         }
                         
                         // Load task categories
@@ -266,10 +266,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function disableInputs(disabled) {
-        els.contentWrapper.querySelectorAll('input, textarea, select').forEach(i => i.disabled = disabled);
+        els.contentWrapper.querySelectorAll('input, textarea, select').forEach(i => {
+            // No deshabilitar elementos dentro de la lista de tareas
+            if (i.closest('#todo-list')) return;
+            i.disabled = disabled;
+        });
         els.taskInput.disabled = disabled;
         els.addTaskBtn.disabled = disabled;
         document.querySelectorAll('.auth-teaser button').forEach(b => b.disabled = false);
+    }
+
+    let dragSrcEl = null;
+
+    function handleTaskDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        // e.dataTransfer.setData('text/html', this.innerHTML);
+        this.classList.add('dragging');
+    }
+
+    function handleTaskDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+
+    function handleTaskDragEnter(e) {
+        this.classList.add('over');
+    }
+
+    function handleTaskDragLeave(e) {
+        this.classList.remove('over');
+    }
+
+    function handleTaskDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+
+        if (dragSrcEl !== this) {
+            const srcId = dragSrcEl.dataset.id;
+            const targetId = this.dataset.id;
+
+            // Encontrar índices en el array original
+            const srcIndex = currentDayData.tasks.findIndex(t => t.id == srcId);
+            const targetIndex = currentDayData.tasks.findIndex(t => t.id == targetId);
+
+            if (srcIndex >= 0 && targetIndex >= 0) {
+                // Mover elemento
+                const [movedTask] = currentDayData.tasks.splice(srcIndex, 1);
+                currentDayData.tasks.splice(targetIndex, 0, movedTask);
+                
+                saveCurrentDay();
+                renderTasks();
+            }
+        }
+        return false;
+    }
+
+    function handleTaskDragEnd(e) {
+        this.classList.remove('dragging');
+        els.todoList.querySelectorAll('.list-group-item').forEach(item => {
+            item.classList.remove('over');
+        });
     }
 
     function renderTasks() {
@@ -311,23 +372,32 @@ document.addEventListener('DOMContentLoaded', () => {
         visibleTasks.forEach(task => {
             const li = document.createElement('li');
             li.className = `list-group-item ${task.completed ? 'completed-task' : ''}`;
+            li.dataset.id = task.id; // ID para drag & drop
             
-            const checkboxAttr = isReadOnly ? 'disabled' : '';
-            const actionStyle = isReadOnly ? 'display: none;' : '';
-            const deleteAction = isReadOnly ? '' : `onclick="window.handleDelete(${task.id})"`;
-            const editAction = isReadOnly ? '' : `onclick="window.handleEditTask(${task.id})"`;
-
-            let badges = '';
-            if (authToken) {
-                const cats = taskCategoriesMap[task.id] || [];
-                badges = cats.map(c => 
-                    `<span class="badge rounded-pill ms-1 text-white" style="background-color: ${c.color}; font-size: 0.6em;">${c.name}</span>`
-                ).join('');
+            if (!isReadOnly) {
+                li.setAttribute('draggable', 'true');
+                li.addEventListener('dragstart', handleTaskDragStart);
+                li.addEventListener('dragenter', handleTaskDragEnter);
+                li.addEventListener('dragover', handleTaskDragOver);
+                li.addEventListener('dragleave', handleTaskDragLeave);
+                li.addEventListener('drop', handleTaskDrop);
+                li.addEventListener('dragend', handleTaskDragEnd);
+                li.style.cursor = 'grab';
             }
 
+            // Permitir interacción con tareas incluso en días pasados
+            const checkboxAttr = '';
+            const actionStyle = '';
+            const deleteAction = `onclick="window.handleDelete(${task.id})"`;
+            const editAction = `onclick="window.handleEditTask(${task.id})"`;
+
+            const cats = taskCategoriesMap[task.id] || [];
+            const dots = cats.map(c => 
+                `<span class="category-dot" style="background-color: ${c.color};" title="${c.name}"></span>`
+            ).join('');
             
             const editButton = `
-                <button class="btn btn-link text-secondary p-0 me-2" ${editAction} style="${actionStyle}" title="Editar">
+                <button class="btn btn-link text-secondary p-0 me-2 edit-btn" ${editAction} style="${actionStyle}" title="Editar">
                     <i class="bi bi-pencil-square"></i>
                 </button>
             `;
@@ -335,9 +405,9 @@ document.addEventListener('DOMContentLoaded', () => {
             li.innerHTML = `
                 <div class="d-flex align-items-center w-100">
                     <input class="form-check-input rounded-circle" type="checkbox" ${task.completed ? 'checked' : ''} ${checkboxAttr} onchange="window.handleToggle(${task.id})">
-                    <div class="flex-grow-1 ms-2">
+                    <div class="flex-grow-1 ms-2 d-flex align-items-center">
+                        ${dots}
                         <span class="todo-text">${escapeHtml(task.text)}</span>
-                        <div>${badges}</div>
                     </div>
                     ${editButton}
                     <button class="delete-btn" ${deleteAction} style="${actionStyle}" title="Eliminar">
@@ -445,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     text: t.description,
                     completed: t.isCompleted
                 }));
-                currentDayData.tasks.sort((a, b) => b.id - a.id);
+                // currentDayData.tasks.sort((a, b) => b.id - a.id); // Removed to allow manual reordering
             }
 
             await loadTaskCategories(); // Refresh categories map
@@ -611,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         text: t.description,
                         completed: t.isCompleted
                     }));
-                    currentDayData.tasks.sort((a, b) => b.id - a.id);
+                    // currentDayData.tasks.sort((a, b) => b.id - a.id);
                 }
 
             } catch (err) {
