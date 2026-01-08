@@ -41,13 +41,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .planner-title {
-    color: var(--text-color);
+    color: var(--primary-color) !important;
     position: relative;
     display: inline-block;
 }
 
 .planner-subtitle {
-    color: var(--accent-color) !important;
+    color: #333 !important;
+    font-size: 1rem !important;
 }
 
 .date-badge {
@@ -445,6 +446,15 @@ h1, h2, h3, h4, h5, h6 {
 
 .edit-btn:hover {
     transform: scale(1.2);
+    color: var(--primary-color) !important;
+}
+
+.footer-link {
+    transition: all 0.2s ease;
+}
+
+.footer-link:hover {
+    font-weight: bold;
     color: var(--primary-color) !important;
 }
 
