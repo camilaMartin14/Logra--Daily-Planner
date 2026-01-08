@@ -2,7 +2,11 @@ import { apiFetch } from './api.js';
 
 export const DayApi = {
     async obtenerOCrear(fecha) {
-        return apiFetch(`/days/today`);
+        try {
+            return await apiFetch(`/days/${fecha}`);
+        } catch (e) {
+            return await apiFetch(`/days/today`);
+        }
     },
 
     async actualizar(id, data) {
