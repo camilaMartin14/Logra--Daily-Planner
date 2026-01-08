@@ -998,7 +998,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     sleepCount++; 
                 }
 
-                // Solo agregar al reporte si el día tiene contenido relevante
                 if (tasks.length > 0 || data.dailyNote || data.mood) {
                     dailyData.push({
                         date: date,
@@ -1022,7 +1021,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const margin = 40;
             const contentWidth = pageWidth - (margin * 2);
             
-            // Colores de la marca (Logra Style)
             const colorPrimary = [226, 179, 196]; // #e2b3c4 (Rosa pastel)
             const colorPrimaryDark = [213, 155, 176]; // #d59bb0 (Rosa oscuro)
             const colorText = [93, 92, 97]; // #5d5c61 (Gris oscuro)
@@ -1031,7 +1029,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let y = margin + 20;
 
-            // -- Encabezado --
             doc.setFont("helvetica", "bold");
             doc.setFontSize(24);
             doc.setTextColor(...colorPrimaryDark);
@@ -1044,7 +1041,6 @@ document.addEventListener('DOMContentLoaded', () => {
             doc.text("Logra Daily Planner", margin, y);
             y += 35;
 
-            // -- Resumen Estadístico (Caja) --
             doc.setDrawColor(...colorPrimary);
             doc.setFillColor(...colorBgLight);
             doc.roundedRect(margin, y, contentWidth, 75, 8, 8, 'FD');
@@ -1055,7 +1051,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const statsY = y + 25;
             const col2X = margin + 250;
 
-            // Columna 1
             doc.setFont("helvetica", "bold");
             doc.text(`Total Tareas:`, margin + 20, statsY);
             doc.setFont("helvetica", "normal");
@@ -1067,7 +1062,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const successRate = tasksTotal ? Math.round((tasksCompleted/tasksTotal)*100) : 0;
             doc.text(`${successRate}%`, margin + 110, statsY + 25);
             
-            // Columna 2
             doc.setFont("helvetica", "bold");
             doc.text(`Hidratación Prom.:`, col2X, statsY);
             doc.setFont("helvetica", "normal");
@@ -1080,7 +1074,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             y += 110;
 
-            // -- Detalle Diario --
             if (dailyData.length === 0) {
                  doc.setFont("helvetica", "italic");
                  doc.setTextColor(150, 150, 150);
@@ -1088,12 +1081,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             dailyData.forEach((day, index) => {
-                // Verificar espacio en página antes de empezar un nuevo día
                 if (y > doc.internal.pageSize.getHeight() - 100) {
                     doc.addPage();
                     y = margin + 20;
                 } else if (index > 0) {
-                    // Separador entre días (excepto el primero) - Rosa suave
                     doc.setDrawColor(...colorPrimary);
                     doc.setLineWidth(0.5);
                     doc.line(margin, y - 10, pageWidth - margin, y - 10);
@@ -1101,7 +1092,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     y += 10;
                 }
 
-                // Fecha del día
                 doc.setFont("helvetica", "bold");
                 doc.setTextColor(...colorPrimaryDark);
                 doc.setFontSize(13);
@@ -1147,7 +1137,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     y += 5;
                 }
 
-                // Nota del día
                 if (day.note) {
                     if (y > doc.internal.pageSize.getHeight() - 60) {
                         doc.addPage();
@@ -1162,7 +1151,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const splitNote = doc.splitTextToSize(notePrefix + day.note, contentWidth - 35);
                     const noteHeight = (splitNote.length * 14) + 10;
                     
-                    // Barra lateral decorativa para la nota - Rosa
                     doc.setDrawColor(...colorPrimary);
                     doc.setLineWidth(3);
                     doc.line(margin + 5, y + 2, margin + 5, y + noteHeight - 8);

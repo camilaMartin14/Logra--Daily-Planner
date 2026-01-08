@@ -161,9 +161,8 @@ function renderNotes() {
         let titleStyle = 'color: #333;'; // Negro por defecto
 
         if (note.categories && note.categories.length > 0) {
-            // Usar el color de la primera categoría
             noteColor = note.categories[0].color;
-            titleStyle = 'color: #333;'; // Título oscuro
+            titleStyle = 'color: #333;'; 
             
             badges = note.categories.map(c => 
                 `<span class="badge rounded-pill me-1 text-white" style="background-color: rgba(0,0,0,0.2); font-size: 0.65em;">${escapeHtml(c.name)}</span>`

@@ -1,9 +1,9 @@
 :root {
-    --primary-color: #e2b3c4; /* Soft pink */
+    --primary-color: #e2b3c4; 
     --primary-hover: #d59bb0;
-    --secondary-color: #dcd6f7; /* Lilac */
-    --accent-color: #a6b1e1; /* Purple/Blue */
-    --bg-color: #fdfbf7; /* Warm white/paper */
+    --secondary-color: #dcd6f7; 
+    --accent-color: #a6b1e1; 
+    --bg-color: #fdfbf7; 
     --card-bg: #ffffff;
     --text-color: #5d5c61;
     --border-radius: 16px;
@@ -23,7 +23,7 @@ h1, h2, h3, h4, h5, h6 {
     font-family: 'Lora', serif;
 }
 
-/* Texture overlay */
+/* Background texture */
 .paper-texture {
     position: fixed;
     top: 0;
@@ -54,15 +54,16 @@ h1, h2, h3, h4, h5, h6 {
 
 .date-badge {
     background-color: #fff;
-    padding: 0.5rem 1.5rem;
+    padding: 0.25rem 1rem;
     border-radius: 50px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     font-family: 'Lora', serif;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 500;
     color: var(--primary-hover);
     border: 1px solid rgba(0,0,0,0.02);
-    min-width: 180px;
+    min-width: 150px;
+    text-align: center;
 }
 
 .nav-btn {
@@ -250,11 +251,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .wellness-btn.active {
-    color: #4fc3f7; /* Water color */
+    color: #4fc3f7; 
 }
 
 .wellness-btn.sleep-active {
-    color: #7e57c2; /* Sleep color */
+    color: #7e57c2; 
 }
 
 .wellness-icon {
@@ -279,7 +280,6 @@ h1, h2, h3, h4, h5, h6 {
     transition: opacity 0.5s ease-out;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
 }
@@ -307,7 +307,6 @@ h1, h2, h3, h4, h5, h6 {
     border-top: 2px solid var(--primary-color);
 }
 
-/* Notes Grid Drag & Drop */
 .note-card.dragging {
     opacity: 0.4;
 }
@@ -317,7 +316,6 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 0 10px rgba(226, 179, 196, 0.5) !important;
 }
 
-/* Login/Register Modal Styles */
 .nav-pills .nav-link {
     color: #888;
     border-radius: 50px;
@@ -347,17 +345,15 @@ h1, h2, h3, h4, h5, h6 {
     border-color: #ccc;
 }
 
-/* Calendar Styles */
+/* Calendar Style */
 .calendar-card {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    /* Allow the calendar to size, but cap it so the download button can match */
     width: 100%;
     max-width: 260px;
     margin: 0 auto;
 }
 
-/* Ensure the floating calendar button shares the same max width */
 .calendar-float {
     width: 100%;
     max-width: 260px;
@@ -369,7 +365,6 @@ h1, h2, h3, h4, h5, h6 {
     box-sizing: border-box;
 }
 
-/* Ensure calendar fits well on smaller screens but doesn't stretch weirdly */
 @media (min-width: 992px) {
     .right-top-row {
         align-items: flex-start !important; 
@@ -444,7 +439,6 @@ h1, h2, h3, h4, h5, h6 {
     background-color: white;
 }
 
-/* Task Action Buttons */
 .delete-btn {
     background: transparent !important;
     border: none !important;
@@ -484,7 +478,6 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--primary-color) !important;
 }
 
-/* Hover effect for edit/delete buttons in tasks and categories */
 #todo-list .list-group-item .edit-btn,
 #todo-list .list-group-item .delete-btn,
 #categories-list .list-group-item .edit-btn,

@@ -7,8 +7,8 @@ export class Calendar {
         this.monthYearDisplay = document.getElementById('cal-month-year');
         this.onDateSelect = onDateSelect;
         
-        this.currentDate = new Date(); // Fecha seleccionada
-        this.viewDate = new Date();    // Fecha de visualización (mes)
+        this.currentDate = new Date(); 
+        this.viewDate = new Date();    
         
         this.initEventListeners();
         this.render();
@@ -35,7 +35,6 @@ export class Calendar {
 
     setDate(date) {
         this.currentDate = new Date(date);
-        // Si la fecha seleccionada está en un mes distinto al visible, cambiar vista
         if (this.currentDate.getMonth() !== this.viewDate.getMonth() || 
             this.currentDate.getFullYear() !== this.viewDate.getFullYear()) {
             this.viewDate = new Date(date);
@@ -103,7 +102,7 @@ export class Calendar {
                 el.classList.add('today');
             }
 
-            // Tiene datos? (Check local storage key matches planner.js logic)
+            // Tiene datos? 
             const localKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
             
             if (localDb[localKey]) {
@@ -111,7 +110,6 @@ export class Calendar {
             }
 
             el.addEventListener('click', () => {
-                // Actualizar selección interna
                 this.currentDate = new Date(year, month, i);
                 this.render();
                 // Notificar afuera
