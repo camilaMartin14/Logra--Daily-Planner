@@ -67,6 +67,60 @@ document.addEventListener('DOMContentLoaded', () => {
         monthPdfBtn: document.getElementById('btn-month-pdf')
     };
 
+    async function fetchCategories() {
+        if (!authToken) {
+            const db = JSON.parse(localStorage.getItem('logra_categories') || '[]');
+            updateCategorySelectors(db);
+        } else {
+            try {
+                const cats = await CategoryApi.getAll();
+                updateCategorySelectors(cats);
+            } catch (e) {
+                console.error('Error fetching categories for planner:', e);
+            }
+        }
+    }
+
+    function updateCategorySelectors(cats) {
+        categories = cats;
+        
+        // Update Filter Select
+        const currentFilterVal = els.taskCategoryFilter.value;
+        els.taskCategoryFilter.innerHTML = '<option value="">Todas las cat.</option>';
+        cats.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            els.taskCategoryFilter.appendChild(opt);
+        });
+        els.taskCategoryFilter.value = currentFilterVal; // Restore selection if still valid
+
+        // Update New Task Select
+        const currentNewTaskVal = els.taskCategoryInput.value;
+        els.taskCategoryInput.innerHTML = '<option value="">Sin categoría</option>';
+        cats.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            els.taskCategoryInput.appendChild(opt);
+        });
+        els.taskCategoryInput.value = currentNewTaskVal;
+
+        // Update Edit Modal Checkboxes
+        els.taskCategoriesContainer.innerHTML = '';
+        cats.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'form-check form-check-inline';
+            div.innerHTML = `
+                <input class="form-check-input" type="checkbox" id="task-cat-${c.id}" value="${c.id}">
+                <label class="form-check-label badge rounded-pill text-white" for="task-cat-${c.id}" style="background-color: ${c.color}; cursor: pointer;">
+                    ${c.name}
+                </label>
+            `;
+            els.taskCategoriesContainer.appendChild(div);
+        });
+    }
+
     function getEmptyDayData() {
         return {
             tasks: [],
@@ -123,7 +177,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             currentDayData.tasks = backendTasks.map(t => ({
                                 id: t.id,
                                 text: t.description,
-                                completed: t.isCompleted
+                                completed: t.isCompleted,
+                                categories: t.categories || []
                             }));
                         }
                         
@@ -162,6 +217,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (categories.length === 0) return;
         
         taskCategoriesMap = {};
+        let loadedFromTasks = false;
+
+        // Intentar poblar desde las tareas cargadas (si el backend devuelve categorías)
+        if (currentDayData.tasks && currentDayData.tasks.length > 0) {
+            currentDayData.tasks.forEach(t => {
+                if (t.categories && Array.isArray(t.categories) && t.categories.length > 0) {
+                    const mappedCats = t.categories.map(tc => {
+                         const catId = typeof tc === 'object' ? tc.id : tc;
+                         return categories.find(c => c.id == catId);
+                    }).filter(Boolean);
+                    
+                    if (mappedCats.length > 0) {
+                        taskCategoriesMap[t.id] = mappedCats;
+                        loadedFromTasks = true;
+                    }
+                }
+            });
+        }
+
+        // Si logramos cargar desde tareas, no hace falta hacer fetch individual
+        if (loadedFromTasks) return;
         
         if (authToken) {
             const promises = categories.map(async cat => {
@@ -410,9 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let cats = taskCategoriesMap[task.id] || [];
             
-            if (currentCategoryFilter) {
-                cats = cats.filter(c => c.id == currentCategoryFilter);
-            }
+
 
             const uniqueCats = [];
             const seenCatIds = new Set();
@@ -751,22 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loggedIn) els.userNameDisplay.textContent = localStorage.getItem('logra_user_name') || 'Usuario';
     }
 
-    async function fetchCategories() {
-        if (!authToken) {
-            const db = JSON.parse(localStorage.getItem('logra_categories') || '[]');
-            categories = db;
-            updateCategorySelectors(categories);
-            return;
-        }
-        try {
-            const cats = await CategoryApi.getAll();
-            categories = cats;
-            updateCategorySelectors(categories);
-        } catch (e) {
-            console.error('Error fetching categories:', e);
-            categories = [];
-        }
-    }
+
 
     async function init() {
         updateAuthUI();

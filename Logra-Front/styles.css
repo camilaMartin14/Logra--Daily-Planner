@@ -173,6 +173,16 @@ h1, h2, h3, h4, h5, h6 {
     background-color: rgba(249, 247, 242, 0.5);
 }
 
+.category-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
 .completed-task .todo-text {
     text-decoration: line-through;
     color: #999;
