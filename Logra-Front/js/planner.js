@@ -434,10 +434,11 @@ document.addEventListener('DOMContentLoaded', () => {
             visibleTasks = visibleTasks.filter(t => t.completed);
         }
 
-        if (currentCategoryFilter) {
+        const catFilterId = els.taskCategoryFilter ? els.taskCategoryFilter.value : '';
+        if (catFilterId) {
             visibleTasks = visibleTasks.filter(t => {
                 const cats = taskCategoriesMap[t.id] || [];
-                return cats.some(c => c.id == currentCategoryFilter);
+                return cats.some(c => c.id == catFilterId);
             });
         }
         
@@ -675,25 +676,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function updateCategorySelectors(cats) {
-        categories = cats;
-        
-        els.taskCategoryInput.innerHTML = '<option value="">Sin categoría</option>';
-        cats.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.name;
-            els.taskCategoryInput.appendChild(opt);
-        });
 
-        els.taskCategoryFilter.innerHTML = '<option value="">Todas las cat.</option>';
-        cats.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.name;
-            els.taskCategoryFilter.appendChild(opt);
-        });
-    }
 
     function setupEventListeners() {
         els.prevDayBtn.addEventListener('click', () => changeDate(-1));
