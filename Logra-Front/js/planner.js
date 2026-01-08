@@ -437,8 +437,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const catFilterId = els.taskCategoryFilter ? els.taskCategoryFilter.value : '';
         if (catFilterId) {
             visibleTasks = visibleTasks.filter(t => {
-                const cats = taskCategoriesMap[t.id] || [];
-                return cats.some(c => c.id == catFilterId);
+                const cats = taskCategoriesMap[String(t.id)] || taskCategoriesMap[t.id] || [];
+                return cats.some(c => String(c.id) === String(catFilterId));
             });
         }
         

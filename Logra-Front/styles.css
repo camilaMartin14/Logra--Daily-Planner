@@ -483,4 +483,22 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--primary-color) !important;
 }
 
+/* Hover effect for edit/delete buttons in tasks and categories */
+#todo-list .list-group-item .edit-btn,
+#todo-list .list-group-item .delete-btn,
+#categories-list .list-group-item .edit-btn,
+#categories-list .list-group-item .delete-btn {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+}
+
+#todo-list .list-group-item:hover .edit-btn,
+#todo-list .list-group-item:hover .delete-btn,
+#categories-list .list-group-item:hover .edit-btn,
+#categories-list .list-group-item:hover .delete-btn {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 
