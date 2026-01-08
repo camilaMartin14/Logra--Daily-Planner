@@ -349,8 +349,23 @@ h1, h2, h3, h4, h5, h6 {
 /* Calendar Styles */
 .calendar-card {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    width: fit-content;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* Allow the calendar to size, but cap it so the download button can match */
+    width: 100%;
+    max-width: 260px;
     margin: 0 auto;
+}
+
+/* Ensure the floating calendar button shares the same max width */
+.calendar-float {
+    width: 100%;
+    max-width: 260px;
+    margin: 0 auto;
+}
+
+.calendar-float .calendar-float-btn {
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Ensure calendar fits well on smaller screens but doesn't stretch weirdly */
