@@ -44,8 +44,8 @@ function renderCategories() {
                 <span class="small fw-medium">${escapeHtml(cat.name)}</span>
             </div>
             <div>
-                <button class="btn btn-link text-muted p-0 me-2 btn-edit-cat" data-id="${cat.id}" style="font-size: 0.85rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-link text-danger p-0 btn-delete-cat" data-id="${cat.id}" style="font-size: 0.85rem;"><i class="bi bi-trash"></i></button>
+                <button class="edit-btn p-0 me-2 btn-edit-cat" data-id="${cat.id}" style="font-size: 0.85rem;"><i class="bi bi-pencil"></i></button>
+                <button class="delete-btn p-0 btn-delete-cat" data-id="${cat.id}" style="font-size: 0.85rem;"><i class="bi bi-trash"></i></button>
             </div>
         `;
         categoriesListEl.appendChild(item);

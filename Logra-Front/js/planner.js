@@ -2,6 +2,7 @@ import { apiFetch, clearToken, authToken } from './api.js';
 import { DayApi } from './dayApi.js';
 import { TaskApi } from './taskApi.js';
 import { CategoryApi } from './categoryApi.js';
+import { Calendar } from './calendar.js';
 
 document.addEventListener('DOMContentLoaded', () => { 
     const MOOD_MAP = {
@@ -17,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let categories = [];
     let taskCategoriesMap = {};
     let taskModal = null;
+    let calendar = null;
 
     const els = {
         currentDate: document.getElementById('current-date'),
@@ -61,7 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
         taskForm: document.getElementById('taskForm'),
         taskIdInput: document.getElementById('taskId'),
         taskDescInput: document.getElementById('taskDescription'),
-        taskCategoriesContainer: document.getElementById('task-categories-selection')
+        taskCategoriesContainer: document.getElementById('task-categories-selection'),
+        monthPdfBtn: document.getElementById('btn-month-pdf')
     };
 
     function getEmptyDayData() {
@@ -95,18 +98,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    function formatDateKey(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
     async function loadDay() {
         try {
-            const dateKey = selectedDate.toISOString().split('T')[0];
+            if (calendar) calendar.setDate(selectedDate);
+            const dateKey = formatDateKey(selectedDate);
             
             if (authToken) {
                 const backendDay = await DayApi.obtenerOCrear(dateKey);
                 currentDayData = mapBackendToFrontend(backendDay);
                 
-                if (backendDay.date) {
-                    selectedDate = new Date(backendDay.date);
-                    renderHeader(); 
-                }
+                // Mantener la fecha seleccionada por el usuario sin sobrescribir desde backend
 
                 if (currentDayData && currentDayData.id) {
                     try {
@@ -127,6 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 const db = JSON.parse(localStorage.getItem('logra_db') || '{}');
+                // Migración: si existen datos bajo la clave antigua (UTC via toISOString),
+                // moverlos a la clave local consistente
+                const legacyKey = new Date(selectedDate).toISOString().split('T')[0];
+                if (!db[dateKey] && db[legacyKey]) {
+                    db[dateKey] = db[legacyKey];
+                    delete db[legacyKey];
+                    localStorage.setItem('logra_db', JSON.stringify(db));
+                }
                 currentDayData = db[dateKey] || getEmptyDayData();
             }
         } catch (e) {
@@ -200,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             const db = JSON.parse(localStorage.getItem('logra_db') || '{}');
-            const dateKey = selectedDate.toISOString().split('T')[0];
+            const dateKey = formatDateKey(selectedDate);
             db[dateKey] = currentDayData;
             localStorage.setItem('logra_db', JSON.stringify(db));
         }
@@ -412,8 +428,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ).join('');
             
             const editButton = `
-                <button class="btn btn-link text-secondary p-0 me-2 edit-btn" ${editAction} style="${actionStyle}" title="Editar">
-                    <i class="bi bi-pencil-square"></i>
+                <button class="edit-btn p-0 me-2" ${editAction} style="${actionStyle}" title="Editar">
+                    <i class="bi bi-pencil"></i>
                 </button>
             `;
 
@@ -653,6 +669,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (els.taskForm) {
             els.taskForm.addEventListener('submit', handleTaskSubmit);
         }
+        if (els.monthPdfBtn) {
+            els.monthPdfBtn.addEventListener('click', generateMonthPdf);
+        }
     }
 
     async function handleTaskSubmit(e) {
@@ -751,6 +770,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function init() {
         updateAuthUI();
+
+        calendar = new Calendar('calendar-wrapper', async (date) => {
+            selectedDate = date;
+            await loadDay();
+        });
+
         setupEventListeners();
         if (typeof bootstrap !== 'undefined') {
             if (els.taskModalEl) {
@@ -856,4 +881,268 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     init();
+    
+    async function fetchDayData(date) {
+        const key = formatDateKey(date);
+        if (authToken) {
+            try {
+                const backendDay = await DayApi.obtenerOCrear(key);
+                const mapped = mapBackendToFrontend(backendDay);
+                if (mapped && backendDay && backendDay.id) {
+                    try {
+                        const ts = await TaskApi.listar(backendDay.id);
+                        if (Array.isArray(ts)) {
+                            mapped.tasks = ts.map(t => ({ id: t.id, text: t.description, completed: t.isCompleted }));
+                        }
+                    } catch(e) {}
+                }
+                return mapped;
+            } catch(e) {
+                return getEmptyDayData();
+            }
+        } else {
+            const db = JSON.parse(localStorage.getItem('logra_db') || '{}');
+            return db[key] || getEmptyDayData();
+        }
+    }
+    
+    async function generateMonthPdf() {
+        const { jsPDF } = window.jspdf || {};
+        if (!jsPDF) {
+            alert('No se pudo cargar el generador de PDF.');
+            return;
+        }
+
+        // UX: Feedback visual en el botón
+        const btn = els.monthPdfBtn;
+        const originalText = btn ? btn.innerText : '';
+        if (btn) {
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Generando...';
+            btn.disabled = true;
+        }
+
+        try {
+            const base = calendar ? calendar.viewDate : new Date(selectedDate);
+            const year = base.getFullYear();
+            const month = base.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+            
+            // --- 1. Recopilar Datos ---
+            let tasksTotal = 0;
+            let tasksCompleted = 0;
+            let hydrationSum = 0;
+            let hydrationCount = 0;
+            let sleepSum = 0;
+            let sleepCount = 0;
+            
+            const dailyData = [];
+
+            // Iterar por todos los días del mes
+            for (let d = 1; d <= daysInMonth; d++) {
+                const date = new Date(year, month, d);
+                const data = await fetchDayData(date); // Reutilizamos la función existente que ya maneja local/remoto
+                const tasks = Array.isArray(data.tasks) ? data.tasks : [];
+                
+                tasksTotal += tasks.length;
+                tasksCompleted += tasks.filter(t => t.completed).length;
+                
+                if (typeof data.hydration === 'number' && data.hydration > 0) { 
+                    hydrationSum += data.hydration; 
+                    hydrationCount++; 
+                }
+                if (typeof data.sleep === 'number' && data.sleep > 0) { 
+                    sleepSum += data.sleep; 
+                    sleepCount++; 
+                }
+
+                // Solo agregar al reporte si el día tiene contenido relevante
+                if (tasks.length > 0 || data.dailyNote || data.mood) {
+                    dailyData.push({
+                        date: date,
+                        dayLabel: date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }),
+                        tasks: tasks,
+                        completedCount: tasks.filter(t => t.completed).length,
+                        note: data.dailyNote,
+                        mood: data.mood,
+                        hydration: data.hydration,
+                        sleep: data.sleep
+                    });
+                }
+            }
+
+            const avgHydration = hydrationCount ? (hydrationSum / hydrationCount).toFixed(1) : "0";
+            const avgSleep = sleepCount ? (sleepSum / sleepCount).toFixed(1) : "0";
+
+            // --- 2. Generar PDF ---
+            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const margin = 40;
+            const contentWidth = pageWidth - (margin * 2);
+            
+            // Colores de la marca (Logra Style)
+            const colorPrimary = [226, 179, 196]; // #e2b3c4 (Rosa pastel)
+            const colorPrimaryDark = [213, 155, 176]; // #d59bb0 (Rosa oscuro)
+            const colorText = [93, 92, 97]; // #5d5c61 (Gris oscuro)
+            const colorBgLight = [252, 240, 245]; // #fcf0f5 (Rosa muy suave fondo)
+            const colorAccent = [166, 177, 225]; // #a6b1e1 (Lila/Azul)
+            
+            let y = margin + 20;
+
+            // -- Encabezado --
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(24);
+            doc.setTextColor(...colorPrimaryDark);
+            doc.text(`Resumen Mensual: ${monthNames[month]} ${year}`, margin, y);
+            y += 25;
+            
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(...colorAccent);
+            doc.text("Logra Daily Planner", margin, y);
+            y += 35;
+
+            // -- Resumen Estadístico (Caja) --
+            doc.setDrawColor(...colorPrimary);
+            doc.setFillColor(...colorBgLight);
+            doc.roundedRect(margin, y, contentWidth, 75, 8, 8, 'FD');
+            
+            doc.setFontSize(11);
+            doc.setTextColor(...colorText);
+            
+            const statsY = y + 25;
+            const col2X = margin + 250;
+
+            // Columna 1
+            doc.setFont("helvetica", "bold");
+            doc.text(`Total Tareas:`, margin + 20, statsY);
+            doc.setFont("helvetica", "normal");
+            doc.text(`${tasksTotal} (${tasksCompleted} completadas)`, margin + 110, statsY);
+            
+            doc.setFont("helvetica", "bold");
+            doc.text(`Tasa de éxito:`, margin + 20, statsY + 25);
+            doc.setFont("helvetica", "normal");
+            const successRate = tasksTotal ? Math.round((tasksCompleted/tasksTotal)*100) : 0;
+            doc.text(`${successRate}%`, margin + 110, statsY + 25);
+            
+            // Columna 2
+            doc.setFont("helvetica", "bold");
+            doc.text(`Hidratación Prom.:`, col2X, statsY);
+            doc.setFont("helvetica", "normal");
+            doc.text(`${avgHydration} vasos/día`, col2X + 110, statsY);
+
+            doc.setFont("helvetica", "bold");
+            doc.text(`Sueño Prom.:`, col2X, statsY + 25);
+            doc.setFont("helvetica", "normal");
+            doc.text(`${avgSleep} horas/día`, col2X + 110, statsY + 25);
+
+            y += 110;
+
+            // -- Detalle Diario --
+            if (dailyData.length === 0) {
+                 doc.setFont("helvetica", "italic");
+                 doc.setTextColor(150, 150, 150);
+                 doc.text("No hay registros de actividad para este mes.", margin, y);
+            }
+
+            dailyData.forEach((day, index) => {
+                // Verificar espacio en página antes de empezar un nuevo día
+                if (y > doc.internal.pageSize.getHeight() - 100) {
+                    doc.addPage();
+                    y = margin + 20;
+                } else if (index > 0) {
+                    // Separador entre días (excepto el primero) - Rosa suave
+                    doc.setDrawColor(...colorPrimary);
+                    doc.setLineWidth(0.5);
+                    doc.line(margin, y - 10, pageWidth - margin, y - 10);
+                    doc.setLineWidth(1); // Reset
+                    y += 10;
+                }
+
+                // Fecha del día
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(...colorPrimaryDark);
+                doc.setFontSize(13);
+                const dayLabel = day.dayLabel.charAt(0).toUpperCase() + day.dayLabel.slice(1);
+                doc.text(dayLabel, margin, y);
+                
+                // Mood (alineado a la derecha)
+                if (day.mood) {
+                     const moodMap = {
+                        'happy': 'Feliz',
+                        'neutral': 'Neutral',
+                        'sad': 'Triste'
+                    };
+                    const moodText = moodMap[day.mood] || day.mood;
+                    doc.setFont("helvetica", "italic");
+                    doc.setFontSize(10);
+                    doc.setTextColor(...colorAccent);
+                    doc.text(`Mood: ${moodText}`, pageWidth - margin, y, { align: 'right' });
+                }
+                
+                y += 20;
+
+                // Lista de Tareas
+                if (day.tasks.length > 0) {
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(10);
+                    doc.setTextColor(...colorText);
+                    
+                    day.tasks.forEach(task => {
+                        const status = task.completed ? "[x]" : "[ ]";
+                        const taskText = `${status}  ${task.text}`;
+                        
+                        const splitText = doc.splitTextToSize(taskText, contentWidth - 30);
+                        
+                        if (y + (splitText.length * 14) > doc.internal.pageSize.getHeight() - margin) {
+                            doc.addPage();
+                            y = margin + 20;
+                        }
+                        
+                        doc.text(splitText, margin + 15, y);
+                        y += (splitText.length * 14);
+                    });
+                    y += 5;
+                }
+
+                // Nota del día
+                if (day.note) {
+                    if (y > doc.internal.pageSize.getHeight() - 60) {
+                        doc.addPage();
+                        y = margin + 20;
+                    }
+                    
+                    doc.setFont("helvetica", "italic");
+                    doc.setFontSize(10);
+                    doc.setTextColor(...colorText);
+                    
+                    const notePrefix = "Nota: ";
+                    const splitNote = doc.splitTextToSize(notePrefix + day.note, contentWidth - 35);
+                    const noteHeight = (splitNote.length * 14) + 10;
+                    
+                    // Barra lateral decorativa para la nota - Rosa
+                    doc.setDrawColor(...colorPrimary);
+                    doc.setLineWidth(3);
+                    doc.line(margin + 5, y + 2, margin + 5, y + noteHeight - 8);
+                    doc.setLineWidth(1);
+                    
+                    doc.text(splitNote, margin + 15, y + 10);
+                    y += noteHeight + 10;
+                } else {
+                    y += 10;
+                }
+            });
+
+            const fileName = `Logra-${monthNames[month]}-${year}.pdf`;
+            doc.save(fileName);
+        } catch (error) {
+            console.error(error);
+            alert("Hubo un error generando el PDF. Revisa la consola para más detalles.");
+        } finally {
+            if (btn) {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+    }
 });
