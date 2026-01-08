@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
             visibleTasks = visibleTasks.filter(t => t.completed);
         }
 
-        if (currentCategoryFilter && authToken) {
+        if (currentCategoryFilter) {
             visibleTasks = visibleTasks.filter(t => {
                 const cats = taskCategoriesMap[t.id] || [];
                 return cats.some(c => c.id == currentCategoryFilter);
@@ -732,6 +732,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loggedIn) els.userNameDisplay.textContent = localStorage.getItem('logra_user_name') || 'Usuario';
     }
 
+    async function fetchCategories() {
+        if (!authToken) {
+            const db = JSON.parse(localStorage.getItem('logra_categories') || '[]');
+            categories = db;
+            updateCategorySelectors(categories);
+            return;
+        }
+        try {
+            const cats = await CategoryApi.getAll();
+            categories = cats;
+            updateCategorySelectors(categories);
+        } catch (e) {
+            console.error('Error fetching categories:', e);
+            categories = [];
+        }
+    }
+
     async function init() {
         updateAuthUI();
         setupEventListeners();
@@ -741,6 +758,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         await loadDay();
+        await fetchCategories();
+        await loadTaskCategories();
+        renderTasks(); // Re-renderizar después de cargar categorías
     }
 
     window.handleToggle = async function(taskId) {
@@ -803,7 +823,7 @@ document.addEventListener('DOMContentLoaded', () => {
         els.taskIdInput.value = task.id;
         els.taskDescInput.value = task.text;
 
-        if (authToken && categories.length > 0) {
+        if (categories.length > 0) {
             const taskCats = taskCategoriesMap[task.id] || [];
             const taskCatIds = taskCats.map(c => c.id);
 
