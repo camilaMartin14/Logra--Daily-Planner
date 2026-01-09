@@ -950,6 +950,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     async function generateMonthPdf() {
         const { jsPDF } = window.jspdf || {};
+        
+        // Helper para remover emojis ya que la fuente estándar de jsPDF no los soporta
+        function removeEmojis(str) {
+            if (!str) return '';
+            return str.replace(/[\u{1F600}-\u{1F6FF}\u{1F300}-\u{1F5FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E0}-\u{1F1FF}]/gu, '');
+        }
+
         if (!jsPDF) {
             alert('No se pudo cargar el generador de PDF.');
             return;
@@ -1105,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         'neutral': 'Neutral',
                         'sad': 'Triste'
                     };
-                    const moodText = moodMap[day.mood] || day.mood;
+                    const moodText = moodMap[day.mood] || removeEmojis(day.mood);
                     doc.setFont("helvetica", "italic");
                     doc.setFontSize(10);
                     doc.setTextColor(...colorAccent);
@@ -1122,7 +1129,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     day.tasks.forEach(task => {
                         const status = task.completed ? "[x]" : "[ ]";
-                        const taskText = `${status}  ${task.text}`;
+                        const taskText = `${status}  ${removeEmojis(task.text)}`;
                         
                         const splitText = doc.splitTextToSize(taskText, contentWidth - 30);
                         
@@ -1148,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     doc.setTextColor(...colorText);
                     
                     const notePrefix = "Nota: ";
-                    const splitNote = doc.splitTextToSize(notePrefix + day.note, contentWidth - 35);
+                    const splitNote = doc.splitTextToSize(notePrefix + removeEmojis(day.note), contentWidth - 35);
                     const noteHeight = (splitNote.length * 14) + 10;
                     
                     doc.setDrawColor(...colorPrimary);
