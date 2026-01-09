@@ -44,6 +44,18 @@ async function loadNotes() {
         } else {
             allNotes = db.filter(n => n.archived);
         }
+        
+        allNotes.sort((a, b) => {
+            const getTimestamp = (n) => {
+                if (n.updated_at) return new Date(n.updated_at).getTime();
+                if (n.created_at) return new Date(n.created_at).getTime();
+                if (typeof n.id === 'number') return n.id;
+                if (!isNaN(n.id) && Number(n.id) > 1000000000000) return Number(n.id);
+                return 0;
+            };
+            return getTimestamp(b) - getTimestamp(a);
+        });
+
         renderNotes();
         return;
     }
@@ -53,6 +65,18 @@ async function loadNotes() {
         } else {
             allNotes = await NoteApi.getArchived();
         }
+        
+        allNotes.sort((a, b) => {
+            const getTimestamp = (n) => {
+                if (n.updated_at) return new Date(n.updated_at).getTime();
+                if (n.created_at) return new Date(n.created_at).getTime();
+                if (typeof n.id === 'number') return n.id;
+                if (!isNaN(n.id) && Number(n.id) > 1000000000000) return Number(n.id);
+                return 0;
+            };
+            return getTimestamp(b) - getTimestamp(a);
+        });
+
         renderNotes();
     } catch (e) {
         console.error('Error loading notes:', e);
@@ -144,7 +168,7 @@ function renderNotes() {
 
     filtered.forEach(note => {
         const col = document.createElement('div');
-        col.className = 'col-12 col-sm-6';
+        col.className = 'col-12 col-sm-6 fade-in';
         col.dataset.id = note.id; // ID para drag & drop
         
         col.setAttribute('draggable', 'true');
@@ -172,6 +196,20 @@ function renderNotes() {
         const archiveIcon = currentFilter === 'active' ? 'bi-archive' : 'bi-archive-fill';
         const archiveTitle = currentFilter === 'active' ? 'Archivar' : 'Desarchivar';
 
+        const dateObj = new Date(note.updated_at || note.created_at || (typeof note.id === 'number' ? note.id : Date.now()));
+        const dateStr = dateObj.toLocaleString('es-ES', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).replace(',', ' -');
+        
+        let dateColor = '#6c757d'; 
+        if (note.categories && note.categories.length > 0) {
+            dateColor = darkenColor(note.categories[0].color, 50);
+        }
+
         // Determinar si el color de fondo es oscuro para ajustar el texto
         
         col.innerHTML = `
@@ -192,8 +230,13 @@ function renderNotes() {
                         </div>
                     </div>
                     <div class="note-content-preview mb-3 flex-grow-1" style="font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(note.content || '')}</div>
-                    <div class="mt-auto">
-                        ${badges}
+                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                        <div>
+                            ${badges}
+                        </div>
+                        <div style="font-size: 0.75rem; color: ${dateColor}; font-weight: 600;">
+                            ${dateStr}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -345,14 +388,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (id) {
                     const idx = db.findIndex(n => n.id == id);
                     if (idx !== -1) {
-                        db[idx] = { ...db[idx], ...data, categories: selectedCats };
+                        db[idx] = { ...db[idx], ...data, categories: selectedCats, updated_at: new Date().toISOString() };
                     }
                 } else {
-                    db.push({ id: Date.now(), ...data, categories: selectedCats, archived: false });
+                    db.push({ id: Date.now(), created_at: new Date().toISOString(), ...data, categories: selectedCats, archived: false });
                 }
                 localStorage.setItem('logra_notes', JSON.stringify(db));
                 noteModal.hide();
-                loadNotes();
+                await loadNotes();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
 
@@ -385,7 +429,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 noteModal.hide();
-                loadNotes();
+                await loadNotes();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
 
             } catch (err) {
                 console.error(err);
@@ -418,3 +463,24 @@ document.addEventListener('DOMContentLoaded', () => {
         loadNotes();
     }
 });
+
+function darkenColor(color, percent) {
+    if (!color) return '#000000';
+    // Ensure 6 digit hex
+    if (color.length === 4) {
+        color = '#' + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
+    }
+    
+    let r = parseInt(color.substring(1, 3), 16);
+    let g = parseInt(color.substring(3, 5), 16);
+    let b = parseInt(color.substring(5, 7), 16);
+
+    r = Math.floor(r * (100 - percent) / 100);
+    g = Math.floor(g * (100 - percent) / 100);
+    b = Math.floor(b * (100 - percent) / 100);
+
+    return "#" + 
+        (r.toString(16).padStart(2, '0')) + 
+        (g.toString(16).padStart(2, '0')) + 
+        (b.toString(16).padStart(2, '0'));
+}
