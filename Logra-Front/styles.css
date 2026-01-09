@@ -495,4 +495,14 @@ h1, h2, h3, h4, h5, h6 {
     pointer-events: auto;
 }
 
+/* Fix badge number color in filters */
+.filter-btn .badge {
+    color: #6c757d !important;
+    font-weight: 600;
+}
+
+/* Unify card subtitles size */
+.planner-card .card-title {
+    font-size: 1.25rem !important; /* Unified size for all subtitles */
+}
 
