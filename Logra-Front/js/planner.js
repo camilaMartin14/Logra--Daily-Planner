@@ -3,6 +3,7 @@ import { DayApi } from './dayApi.js';
 import { TaskApi } from './taskApi.js';
 import { CategoryApi } from './categoryApi.js';
 import { Calendar } from './calendar.js';
+import { showConfirmModal } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => { 
     const MOOD_MAP = {
@@ -86,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Update Filter Select
         const currentFilterVal = els.taskCategoryFilter.value;
-        els.taskCategoryFilter.innerHTML = '<option value="">Todas las cat.</option>';
+        els.taskCategoryFilter.innerHTML = '<option value="">Filtra por categoría</option>';
         cats.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.id;
@@ -853,34 +854,33 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTasks();
     };
 
-    window.handleDelete = async function(taskId) {
+    window.handleDelete = function(taskId) {
         const index = currentDayData.tasks.findIndex(t => t.id === taskId);
         if (index === -1) return;
 
-        const confirmed = confirm('¿Seguro que quieres eliminar esta tarea?');
-        if (!confirmed) return;
+        showConfirmModal('¿Seguro que quieres eliminar esta tarea?', async () => {
+            const [removed] = currentDayData.tasks.splice(index, 1);
 
-        const [removed] = currentDayData.tasks.splice(index, 1);
-
-        if (authToken) {
-            try {
-                await TaskApi.eliminar(removed.id);
-            } catch (e) {
-                console.error('Error eliminando tarea en backend:', e);
-                alert('No se pudo eliminar la tarea en el servidor.');
-                currentDayData.tasks.splice(index, 0, removed); 
+            if (authToken) {
+                try {
+                    await TaskApi.eliminar(removed.id);
+                } catch (e) {
+                    console.error('Error eliminando tarea en backend:', e);
+                    alert('No se pudo eliminar la tarea en el servidor.');
+                    currentDayData.tasks.splice(index, 0, removed); 
+                }
+            } else {
+                const localMap = JSON.parse(localStorage.getItem('logra_task_categories') || '{}');
+                if (localMap[removed.id]) {
+                    delete localMap[removed.id];
+                    localStorage.setItem('logra_task_categories', JSON.stringify(localMap));
+                    await loadTaskCategories();
+                }
             }
-        } else {
-            const localMap = JSON.parse(localStorage.getItem('logra_task_categories') || '{}');
-            if (localMap[removed.id]) {
-                delete localMap[removed.id];
-                localStorage.setItem('logra_task_categories', JSON.stringify(localMap));
-                await loadTaskCategories();
-            }
-        }
 
-        await saveCurrentDay();
-        renderTasks();
+            await saveCurrentDay();
+            renderTasks();
+        });
     };
 
     window.handleEditTask = function(taskId) {

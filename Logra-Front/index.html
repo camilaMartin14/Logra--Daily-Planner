@@ -51,8 +51,8 @@
                                 <h2 class="h4 card-title mb-0"><i class="bi bi-check2-square me-2"></i>Tareas</h2>
                                 
                                 <div class="d-flex gap-2 filter-container align-items-center">
-                                    <select class="form-select form-select-sm" id="task-category-filter" style="max-width: 150px;">
-                                        <option value="">Todas las cat.</option>
+                                    <select class="form-select form-select-sm" id="task-category-filter" style="max-width: 220px;">
+                                        <option value="">Filtra por categoría</option>
                                     </select>
                                     <div class="vr"></div>
                                     <button class="btn btn-sm filter-btn active" data-filter="all">
@@ -116,7 +116,9 @@
                                 </div>
                             </div>
 
-                            <div id="notes-list" class="row g-2" style="max-height: 500px; overflow-y: auto;">
+                            <div class="notes-scroll-wrapper" style="max-height: 500px; overflow-y: auto; overflow-x: hidden;">
+                                <div id="notes-list" class="notes-masonry">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -440,6 +442,24 @@
                             <button type="submit" class="btn btn-primary planner-btn">Registrarse</button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade confirm-modal" id="confirmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title font-serif">Confirmación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmMessage">¿Estás seguro de realizar esta acción?</p>
+                    <div class="d-flex justify-content-center gap-3 mt-4">
+                         <button type="button" class="btn btn-cancel" data-bs-dismiss="modal" id="btnConfirmCancel">Cancelar</button>
+                         <button type="button" class="btn btn-confirm" id="btnConfirmAction">Eliminar</button>
+                    </div>
                 </div>
             </div>
         </div>

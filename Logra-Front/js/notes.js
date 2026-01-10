@@ -1,6 +1,7 @@
 import { NoteApi } from './noteApi.js';
 import { CategoryApi } from './categoryApi.js';
 import { authToken } from './api.js';
+import { showConfirmModal } from './ui.js';
 
 let allNotes = [];
 let currentFilter = 'active'; 
@@ -168,7 +169,7 @@ function renderNotes() {
 
     filtered.forEach(note => {
         const col = document.createElement('div');
-        col.className = 'col-12 col-sm-6 fade-in';
+        col.className = 'note-item fade-in';
         col.dataset.id = note.id; // ID para drag & drop
         
         col.setAttribute('draggable', 'true');
@@ -213,7 +214,7 @@ function renderNotes() {
         // Determinar si el color de fondo es oscuro para ajustar el texto
         
         col.innerHTML = `
-            <div class="card h-100 shadow-sm border-0 note-card" style="background-color: ${noteColor}; transition: transform 0.2s; min-height: 220px;">
+            <div class="card shadow-sm border-0 note-card" style="background-color: ${noteColor}; transition: transform 0.2s;">
                 <div class="card-body p-3 d-flex flex-column">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <h6 class="card-title mb-0 fw-bold" style="${titleStyle} font-size: 1.1rem;">${escapeHtml(note.title)}</h6>
@@ -308,23 +309,23 @@ async function toggleArchiveNote(id) {
 }
 
 async function deleteNote(id) {
-    if (!confirm('¿Eliminar esta nota permanentemente?')) return;
-    
-    if (!authToken) {
-        let db = JSON.parse(localStorage.getItem('logra_notes') || '[]');
-        db = db.filter(n => n.id != id);
-        localStorage.setItem('logra_notes', JSON.stringify(db));
-        loadNotes();
-        return;
-    }
+    showConfirmModal('¿Eliminar esta nota permanentemente?', async () => {
+        if (!authToken) {
+            let db = JSON.parse(localStorage.getItem('logra_notes') || '[]');
+            db = db.filter(n => n.id != id);
+            localStorage.setItem('logra_notes', JSON.stringify(db));
+            loadNotes();
+            return;
+        }
 
-    try {
-        await NoteApi.delete(id);
-        loadNotes();
-    } catch (e) {
-        console.error(e);
-        alert('Error al eliminar nota');
-    }
+        try {
+            await NoteApi.delete(id);
+            loadNotes();
+        } catch (e) {
+            console.error(e);
+            alert('Error al eliminar nota');
+        }
+    });
 }
 
 function updateCategorySelectors(cats) {

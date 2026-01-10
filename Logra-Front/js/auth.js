@@ -1,4 +1,5 @@
 import { apiFetch, setToken } from './api.js';
+import { showValidationError, clearValidationErrors, showValidationSuccess } from './ui.js';
 
 async function login(email, password) {
     const result = await apiFetch('/auth/login', {
@@ -24,10 +25,24 @@ const loginForm = document.getElementById('loginForm');
 if (loginForm) {
     loginForm.addEventListener('submit', async e => {
         e.preventDefault();
-        console.log('Login form submitted');
+        clearValidationErrors(loginForm);
 
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
+        const emailInput = document.getElementById('loginEmail');
+        const passwordInput = document.getElementById('loginPassword');
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        let isValid = true;
+        if (!email) {
+            showValidationError(emailInput, 'El email es obligatorio');
+            isValid = false;
+        }
+        if (!password) {
+            showValidationError(passwordInput, 'La contraseña es obligatoria');
+            isValid = false;
+        }
+
+        if (!isValid) return;
 
         try {
             console.log('Attempting login for:', email);
@@ -39,7 +54,11 @@ if (loginForm) {
             } else {
                  localStorage.setItem('logra_user_name', 'Usuario');
             }
-            location.reload();
+            
+            showValidationSuccess('loginForm', 'Inicio de sesión exitoso');
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
         } catch (err) {
             console.error('Login error:', err);
             alert(err.message);
@@ -68,18 +87,49 @@ const registerForm = document.getElementById('registerForm');
 if (registerForm) {
     registerForm.addEventListener('submit', async e => {
         e.preventDefault();
-        console.log('Register form submitted');
+        clearValidationErrors(registerForm);
 
-        const firstName = document.getElementById('regName').value;
-        const lastName = document.getElementById('regSurname').value;
-        const email = document.getElementById('regEmail').value;
-        const password = document.getElementById('regPassword').value;
-        const confirmPassword = document.getElementById('regConfirmPassword').value;
+        const nameInput = document.getElementById('regName');
+        const surnameInput = document.getElementById('regSurname');
+        const emailInput = document.getElementById('regEmail');
+        const passwordInput = document.getElementById('regPassword');
+        const confirmPasswordInput = document.getElementById('regConfirmPassword');
 
-        if (password !== confirmPassword) {
-            alert('Las contraseñas no coinciden');
-            return;
+        const firstName = nameInput.value.trim();
+        const lastName = surnameInput.value.trim();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+        const confirmPassword = confirmPasswordInput.value.trim();
+
+        let isValid = true;
+
+        if (!firstName) {
+            showValidationError(nameInput, 'El nombre es obligatorio');
+            isValid = false;
         }
+        if (!lastName) {
+            showValidationError(surnameInput, 'El apellido es obligatorio');
+            isValid = false;
+        }
+        if (!email) {
+            showValidationError(emailInput, 'El email es obligatorio');
+            isValid = false;
+        }
+        if (!password) {
+            showValidationError(passwordInput, 'La contraseña es obligatoria');
+            isValid = false;
+        }
+        if (!confirmPassword) {
+            showValidationError(confirmPasswordInput, 'Confirmar la contraseña es obligatorio');
+            isValid = false;
+        }
+
+        if (password && confirmPassword && password !== confirmPassword) {
+            showValidationError(confirmPasswordInput, 'Las contraseñas no coinciden');
+            isValid = false;
+        }
+
+        if (!isValid) return;
 
         const data = {
             firstName,
@@ -90,8 +140,10 @@ if (registerForm) {
 
         try {
             await register(data);
-            alert('Registro exitoso. Por favor inicia sesión.');
-            location.reload();
+            showValidationSuccess('registerForm', 'Registro exitoso. Por favor inicia sesión.');
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
         } catch (err) {
             console.error('Register error:', err);
             alert(err.message);
