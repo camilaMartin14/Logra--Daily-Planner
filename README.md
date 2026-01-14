@@ -1,180 +1,107 @@
-# Logra — Haciendo que las metas pasen a la acción
+# 🎯 Logra — Daily Planner
 
-Logra es una aplicación de productividad clara y liviana, pensada para ayudar a transformar las intenciones diarias en acciones concretas, sin distracciones ni complejidad innecesaria.
+> **Transforma intenciones en acciones.**
+> Una plataforma de productividad minimalista diseñada para organizar tu día, gestionar hábitos y mantener el enfoque, construida con una arquitectura robusta y moderna.
 
-Integra planificación diaria, gestión de tareas, notas y seguimiento de hábitos de bienestar en una experiencia simple y enfocada.
 
-## Beneficios clave
+---
 
-- Convierte el caos diario en acciones: permite crear, priorizar y completar tareas por día.
+## 📖 Sobre el Proyecto
 
-- Organiza notas y recordatorios mediante categorías reutilizables.
+**Logra** nace de la necesidad de una herramienta que combine la planificación diaria con el bienestar personal, sin la complejidad de los gestores de proyectos empresariales.
 
-- Registra hábitos simples (agua, sueño y comidas) para favorecer decisiones más saludables.
+Este proyecto demuestra la implementación de una **aplicación Full Stack** completa, resolviendo desafíos reales como la sincronización de datos, la gestión de estado en el cliente y la optimización de consultas en el servidor.
 
-- Funciona offline utilizando localStorage y sincroniza la información al iniciar sesión.
+🔗 **Demo Desplegada:** [Ver en Vercel](https://logra-psi.vercel.app/)
 
-- Seguridad a nivel producción: autenticación y autorización mediante JWT.
+---
 
-## Stack técnico
+## 🚀 Stack Tecnológico
 
-### Backend
+### Backend (.NET Core)
+Construido con un enfoque en **Clean Architecture** y rendimiento.
+- **Framework:** ASP.NET Core 8 Web API.
+- **ORM:** Entity Framework Core (Code First).
+- **Base de Datos:** SQL Server / SQLite (configurable).
+- **Seguridad:** Autenticación JWT (JSON Web Tokens) y Hashing de contraseñas.
+- **Patrones:** Repository Pattern, Dependency Injection, DTO Mapping.
 
-- .NET 8 (ASP.NET Core)
+### Frontend (Modern Vanilla JS)
+Una SPA (Single Page Application) ligera y rápida sin dependencias pesadas de frameworks.
+- **Core:** JavaScript ES6+ (Módulos ES).
+- **Estilos:** CSS3 nativo (Custom Properties, Flexbox, Grid) con diseño responsivo.
+- **Arquitectura:** Gestión de estado centralizada y renderizado dinámico.
+- **Interacción:** Drag & Drop nativo para reordenamiento de tareas.
+- **Integración:** Fetch API con interceptores para manejo de tokens.
 
-- Entity Framework Core (Code First)
+---
 
-- SQL Server (migraciones incluidas)
+## ✨ Características Destacadas
 
-### Frontend
+### ⚡ Productividad y UX
+- **Planificación Diaria:** Vista enfocada en el día actual con navegación intuitiva por calendario.
+- **Drag & Drop:** Reorganiza tus tareas y notas arrastrando y soltando (UX fluida).
+- **Categorización Visual:** Sistema de etiquetas por colores para tareas y notas.
+- **Modo Híbrido:** Funcionalidad offline-first con sincronización automática al conectar.
 
-- HTML, CSS y JavaScript modular (ES Modules)
+### 🛠️ Aspectos Técnicos Relevantes
+- **Optimización de Rendimiento:** Resolución del problema *N+1* en consultas de Entity Framework mediante `Include` y proyección a DTOs.
+- **Seguridad Robusta:** Endpoints protegidos, validación de datos y manejo seguro de sesiones.
+- **Código Limpio:** Separación estricta de responsabilidades (Controllers vs Services vs Data Access).
+- **API RESTful:** Diseño de endpoints estandarizado y predecible.
 
-- Arquitectura tipo SPA
+---
 
-## Demo pública
+## 🔧 Instalación y Despliegue Local
 
-Frontend desplegado en Vercel:
-https://logra-psi.vercel.app/
+Sigue estos pasos para levantar el entorno de desarrollo en tu máquina.
 
-## Funcionalidades principales
-### Tareas diarias
+### Prerrequisitos
+- .NET SDK 8.0
+- SQL Server (o modificar connection string para otra BD)
+- Navegador Web moderno
 
-- Tareas asociadas a días específicos.
-
-- Reordenamiento mediante drag & drop.
-
-- Organización por categorías.
-
-- Posibilidad de marcar tareas de días anteriores como completadas.
-
-### Notas
-
-- Notas activas y archivadas.
-
-- Asociación de categorías.
-
-- Notas persistentes disponibles todos los días.
-
-- Reordenamiento visual mediante drag & drop para una mejor orientación.
-
-### Bienestar
-
-- Registro de consumo de agua.
-
-- Seguimiento de horas de sueño.
-
-- Registro de comidas.
-
-- Estado de ánimo diario para retroalimentación rápida.
-
-### Autenticación y seguridad
-
-- Registro e inicio de sesión de usuarios.
-
-- Autenticación basada en JWT.
-
-- Endpoints protegidos por autorización.
-
-### Público objetivo
-
-- Personas que buscan una herramienta liviana y sin distracciones para organizar su día a día.
-
-- Usuarios que priorizan estructura y claridad por sobre sistemas complejos de productividad.
-
-### Instalación rápida (para demos técnicas)
-Requisitos
-
-- .NET 8 SDK
-
-- SQL Server (instancia local o contenedor compatible)
-
-### Pasos
-### Backend
+### 1. Configuración del Backend
 ```bash
+# Clonar el repositorio
+git clone <url-del-repo>
+
+# Navegar al directorio de la API
 cd Logra-Back/Logra-API
+
+# Restaurar dependencias
 dotnet restore
-dotnet build
+
+# Actualizar base de datos (Aplicar migraciones)
 dotnet ef database update
+
+# Ejecutar la API
 dotnet run
-
+# La API estará disponible en http://localhost:5169 (o puerto configurado)
 ```
 
-### Frontend
-```bash
-cd Logra-Front
-python -m http.server 5500
+### 2. Configuración del Frontend
+Al ser Vanilla JS, no requiere `npm install` ni build steps complejos para desarrollo.
+1. Navega a la carpeta `Logra-Front`.
+2. Abre el archivo `index.html` con una extensión como **Live Server** (VS Code) o cualquier servidor estático local.
+3. Asegúrate de que `api.js` apunte a tu URL local del backend.
 
+---
+
+## 📂 Estructura del Proyecto
+
+```
+Logra/
+├── Logra-API/          # Backend .NET Core
+│   ├── Controllers/    # Endpoints de la API
+│   ├── Services/       # Lógica de negocio
+│   ├── DTOs/           # Transferencia de datos (sin exponer entidades)
+│   └── Models/         # Entidades de dominio (EF Core)
+│
+└── Logra-Front/        # Frontend Cliente
+    ├── js/             # Lógica modular (api, ui, auth...)
+    ├── styles.css      # Estilos globales y componentes
+    └── index.html      # Punto de entrada SPA
 ```
 
 
-Por defecto, el frontend en entorno local consume la API desde:
-https://localhost:7271/api
-
-## API (resumen funcional)
-
-La API está diseñada bajo un enfoque RESTful, con autenticación basada en JWT y separación clara de responsabilidades por dominio.
-
-### Autenticación y usuarios
-
-POST /api/users/register — Registro de usuario
-
-POST /api/users/login — Inicio de sesión → devuelve JWT
-
-GET /api/users/{id} — Obtener perfil de usuario autenticado
-
-### Días
-
-GET /api/days/today — Obtener o crear el registro del día actual
-
-GET /api/days/{id} — Obtener un día específico
-
-PUT /api/days/{id} — Actualizar información del día (estado de ánimo, notas, bienestar)
-
-### Tareas
-
-POST /api/tasks — Crear una tarea asociada a un día
-
-GET /api/tasks/day/{dayId} — Listar tareas de un día
-
-GET /api/tasks/category/{categoryId} — Filtrar tareas por categoría
-
-PUT /api/tasks/{id} — Actualizar tarea (incluye marcar como completada)
-
-DELETE /api/tasks/{id} — Eliminar tarea
-
-POST /api/tasks/{id}/categories/{categoryId} — Asociar categoría
-
-DELETE /api/tasks/{id}/categories/{categoryId} — Quitar categoría
-
-### Notas
-
-POST /api/notes — Crear nota
-
-GET /api/notes/active — Listar notas activas
-
-GET /api/notes/archived — Listar notas archivadas
-
-GET /api/notes/{id} — Obtener nota por id
-
-PUT /api/notes/{id} — Actualizar nota
-
-DELETE /api/notes/{id} — Eliminar nota
-
-POST /api/notes/{id}/archive — Archivar nota
-
-POST /api/notes/{id}/unarchive — Restaurar nota
-
-POST /api/notes/{id}/categories/{categoryId} — Asociar categoría
-
-DELETE /api/notes/{id}/categories/{categoryId} — Quitar categoría
-
-### Categorías
-
-GET /api/categories — Listar categorías del usuario
-
-POST /api/categories — Crear categoría
-
-PUT /api/categories/{id} — Actualizar categoría
-
-DELETE /api/categories/{id} — Eliminar categoría

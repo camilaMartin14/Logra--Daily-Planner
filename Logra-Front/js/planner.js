@@ -217,46 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadTaskCategories() {
         if (categories.length === 0) return;
         
-        taskCategoriesMap = {};
-        let loadedFromTasks = false;
-
-        // Intentar poblar desde las tareas cargadas (si el backend devuelve categorías)
-        if (currentDayData.tasks && currentDayData.tasks.length > 0) {
-            currentDayData.tasks.forEach(t => {
-                if (t.categories && Array.isArray(t.categories) && t.categories.length > 0) {
-                    const mappedCats = t.categories.map(tc => {
-                         const catId = typeof tc === 'object' ? tc.id : tc;
-                         return categories.find(c => c.id == catId);
-                    }).filter(Boolean);
-                    
-                    if (mappedCats.length > 0) {
-                        taskCategoriesMap[t.id] = mappedCats;
-                        loadedFromTasks = true;
-                    }
-                }
-            });
-        }
-
-        // Si logramos cargar desde tareas, no hace falta hacer fetch individual
-        if (loadedFromTasks) return;
-        
-        if (authToken) {
-            const promises = categories.map(async cat => {
-                try {
-                    const tasks = await TaskApi.getByCategory(cat.id);
-                    tasks.forEach(t => {
-                        if (!taskCategoriesMap[t.id]) taskCategoriesMap[t.id] = [];
-                        if (!taskCategoriesMap[t.id].some(existing => existing.id === cat.id)) {
-                            taskCategoriesMap[t.id].push(cat);
-                        }
-                    });
-                } catch (e) {
-                    console.warn(`Failed to fetch tasks for category ${cat.id}`, e);
-                }
-            });
-
-            await Promise.all(promises);
-        } else {
+        // Solo para modo offline/localStorage
+        if (!authToken) {
             const localMap = JSON.parse(localStorage.getItem('logra_task_categories') || '{}');
             Object.keys(localMap).forEach(taskId => {
                 const catIds = localMap[taskId];
@@ -279,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (authToken) {
             if (currentDayData.id) {
-                await DayApi.actualizar(currentDayData.id, {
+                await DayApi.update(currentDayData.id, {
                     waterIntake: currentDayData.hydration,
                     sleepHours: currentDayData.sleep,
                     mood: currentDayData.mood,
@@ -600,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!currentDayData.id) {
              try {
-                const day = await DayApi.obtenerOCrear(selectedDate.toISOString().split('T')[0]);
+                const day = await DayApi.getByDate(selectedDate.toISOString().split('T')[0]);
                 currentDayData.id = day.id;
              } catch(e) {
                  alert("Error sincronizando día con servidor.");
@@ -609,22 +571,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const newTask = await TaskApi.crear(currentDayData.id, text);
+            const newTask = await TaskApi.create(currentDayData.id, text);
             
             if (categoryId) {
                 await TaskApi.addCategory(newTask.id, categoryId);
             }
             
-            const backendTasks = await TaskApi.listar(currentDayData.id);
+            const backendTasks = await TaskApi.getAll(currentDayData.id);
             if (backendTasks && Array.isArray(backendTasks)) {
                 currentDayData.tasks = backendTasks.map(t => ({
                     id: t.id,
                     text: t.description,
-                    completed: t.isCompleted
+                    completed: t.isCompleted,
+                    categories: t.categories || []
                 }));
             }
+            
+            // Poblar mapa de categorías
+            if (backendTasks && Array.isArray(backendTasks)) {
+                currentDayData.tasks.forEach(t => {
+                     if (t.categories && t.categories.length > 0) {
+                         taskCategoriesMap[t.id] = t.categories;
+                     }
+                });
+            }
 
-            await loadTaskCategories();
+            if (!authToken) await loadTaskCategories();
 
             await saveCurrentDay();
             renderTasks();
@@ -746,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const task = currentDayData.tasks.find(t => t.id == id);
                 if (task) {
-                    await TaskApi.actualizar(id, {
+                    await TaskApi.update(id, {
                         description: description,
                         isCompleted: task.completed
                     });
@@ -765,13 +737,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 await loadTaskCategories();
                 
-                 const backendTasks = await TaskApi.listar(currentDayData.id);
+                 const backendTasks = await TaskApi.getAll(currentDayData.id);
                 if (backendTasks && Array.isArray(backendTasks)) {
                     currentDayData.tasks = backendTasks.map(t => ({
                         id: t.id,
                         text: t.description,
-                        completed: t.isCompleted
+                        completed: t.isCompleted,
+                        categories: t.categories || []
                     }));
+                    // Poblar mapa
+                    currentDayData.tasks.forEach(t => {
+                        if (t.categories && t.categories.length > 0) {
+                            taskCategoriesMap[t.id] = t.categories;
+                        }
+                    });
                 }
 
             } catch (err) {
@@ -928,13 +907,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const key = formatDateKey(date);
         if (authToken) {
             try {
-                const backendDay = await DayApi.obtenerOCrear(key);
+                const backendDay = await DayApi.getByDate(key);
                 const mapped = mapBackendToFrontend(backendDay);
                 if (mapped && backendDay && backendDay.id) {
                     try {
-                        const ts = await TaskApi.listar(backendDay.id);
+                        const ts = await TaskApi.getAll(backendDay.id);
                         if (Array.isArray(ts)) {
-                            mapped.tasks = ts.map(t => ({ id: t.id, text: t.description, completed: t.isCompleted }));
+                            mapped.tasks = ts.map(t => ({ 
+                                id: t.id, 
+                                text: t.description, 
+                                completed: t.isCompleted,
+                                categories: t.categories || []
+                            }));
                         }
                     } catch(e) {}
                 }

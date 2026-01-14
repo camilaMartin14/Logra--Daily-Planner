@@ -28,12 +28,17 @@ public class DayService : IDayService
 
     public async Task<DayDTO> GetOrCreateTodayAsync(int userId)
     {
-        var today = DateTime.UtcNow.Date;
+        return await GetByDateAsync(userId, DateTime.UtcNow.Date);
+    }
+
+    public async Task<DayDTO> GetByDateAsync(int userId, DateTime date)
+    {
+        var targetDate = date.Date;
 
         var day = await _context.Days
             .FirstOrDefaultAsync(d =>
                 d.UserId == userId &&
-                d.Date.Date == today
+                d.Date.Date == targetDate
             );
 
         if (day == null)
@@ -41,7 +46,7 @@ public class DayService : IDayService
             day = new Day
             {
                 UserId = userId,
-                Date = today,
+                Date = targetDate,
                 CreatedDate = DateTime.UtcNow
             };
 

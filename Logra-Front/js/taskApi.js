@@ -1,29 +1,29 @@
 import { apiFetch } from './api.js';
 
 export const TaskApi = {
-    crear(diaId, text) {
-        return apiFetch(`/tasks/day/${diaId}`, {
+    create(dayId, text) {
+        return apiFetch(`/tasks/day/${dayId}`, {
             method: 'POST',
             body: JSON.stringify({ description: text })
         });
     },
 
-    listar(diaId) {
-        return apiFetch(`/tasks/day/${diaId}`);
+    getAll(dayId) {
+        return apiFetch(`/tasks/day/${dayId}`);
     },
 
     getByCategory(categoryId) {
         return apiFetch(`/tasks/category/${categoryId}`);
     },
 
-    actualizar(id, data) {
+    update(id, data) {
         return apiFetch(`/tasks/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data)
         });
     },
 
-    eliminar(id) {
+    delete(id) {
         return apiFetch(`/tasks/${id}`, {
             method: 'DELETE'
         });

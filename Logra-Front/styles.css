@@ -23,9 +23,22 @@ h1, h2, h3, h4, h5, h6 {
     font-family: 'Lora', serif;
 }
 
+/* Checkbox Styles */
+.form-check-input {
+    width: 1.25em;
+    height: 1.25em;
+    border-radius: 50% !important;
+    border: 2px solid #ddd;
+    flex-shrink: 0;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
 /* Background texture */
 .paper-texture {
-    position: fixed;
     top: 0;
     left: 0;
     width: 100%;

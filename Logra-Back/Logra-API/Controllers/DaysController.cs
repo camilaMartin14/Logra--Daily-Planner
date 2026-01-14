@@ -1,4 +1,4 @@
-﻿using Logra_API.DTOs;
+using Logra_API.DTOs;
 using Logra_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,6 +28,10 @@ public class DaysController : ControllerBase
     [HttpGet("today")]
     public async Task<IActionResult> GetOrCreateToday()
         => Ok(await _service.GetOrCreateTodayAsync(UserId));
+
+    [HttpGet("date/{date}")]
+    public async Task<IActionResult> GetByDate(DateTime date)
+        => Ok(await _service.GetByDateAsync(UserId, date));
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update( int id, DayUpdateDTO dto)

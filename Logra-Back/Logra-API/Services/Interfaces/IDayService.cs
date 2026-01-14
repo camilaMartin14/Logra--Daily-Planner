@@ -1,4 +1,4 @@
-﻿using Logra_API.DTOs;
+using Logra_API.DTOs;
 
 namespace Logra_API.Services.Interfaces;
 
@@ -7,6 +7,8 @@ public interface IDayService
     Task<DayDTO> GetByIdAsync(int userId, int dayId);
 
     Task<DayDTO> GetOrCreateTodayAsync(int userId);
+
+    Task<DayDTO> GetByDateAsync(int userId, DateTime date);
 
     Task<DayDTO> UpdateAsync(int userId, int dayId, DayUpdateDTO dto);
 }

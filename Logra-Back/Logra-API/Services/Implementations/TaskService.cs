@@ -41,6 +41,8 @@ public class TaskService : ITaskService
     {
         var task = await _context.Tasks
             .Include(t => t.Day)
+            .Include(t => t.TaskCategories)
+                .ThenInclude(tc => tc.Category)
             .FirstOrDefaultAsync(t => t.Id == taskId && t.Day.UserId == userId);
 
         if (task == null)
@@ -53,6 +55,8 @@ public class TaskService : ITaskService
     {
         return await _context.Tasks
             .Include(t => t.Day)
+            .Include(t => t.TaskCategories)
+                .ThenInclude(tc => tc.Category)
             .Where(t => t.DayId == dayId && t.Day.UserId == userId)
             .Select(t => MapToDTO(t))
             .ToListAsync();
@@ -154,6 +158,13 @@ public class TaskService : ITaskService
         {
             Id = task.Id,
             Description = task.Description,
-            IsCompleted = task.IsCompleted
+            IsCompleted = task.IsCompleted,
+            Categories = task.TaskCategories.Select(tc => new CategoryDTO
+            {
+                Id = tc.Category.Id,
+                Name = tc.Category.Name,
+                Color = tc.Category.Color,
+                CreatedDate = tc.Category.CreatedDate
+            }).ToList()
         };
 }
