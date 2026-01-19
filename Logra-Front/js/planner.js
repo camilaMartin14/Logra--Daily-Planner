@@ -3,7 +3,7 @@ import { DayApi } from './dayApi.js';
 import { TaskApi } from './taskApi.js';
 import { CategoryApi } from './categoryApi.js';
 import { Calendar } from './calendar.js';
-import { showConfirmModal } from './ui.js';
+import { showConfirmModal, showToast } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => { 
     const MOOD_MAP = {
@@ -187,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     } catch (err) {
                         console.error("Error cargando tareas:", err);
+                        showToast('Error al cargar tareas del día', 'error');
                     }
                 }
             } else {
@@ -223,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
             Object.keys(localMap).forEach(taskId => {
                 const catIds = localMap[taskId];
                 if (Array.isArray(catIds)) {
-                    taskCategoriesMap[taskId] = catIds.map(id => categories.find(c => c.id == id)).filter(Boolean);
+                    taskCategoriesMap[taskId] = catIds.map(id => categories.find(c => String(c.id) === String(id))).filter(Boolean);
                 }
             });
         }
@@ -333,9 +334,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let dragSrcEl = null;
 
     function handleTaskDragStart(e) {
-        dragSrcEl = this;
+        const el = e.target.closest('.list-group-item');
+        if (!el) return;
+        dragSrcEl = el;
         e.dataTransfer.effectAllowed = 'move';
-        this.classList.add('dragging');
+        el.classList.add('dragging');
     }
 
     function handleTaskDragOver(e) {
@@ -347,25 +350,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleTaskDragEnter(e) {
-        this.classList.add('over');
+        const el = e.target.closest('.list-group-item');
+        if (el) el.classList.add('over');
     }
 
     function handleTaskDragLeave(e) {
-        this.classList.remove('over');
+        const el = e.target.closest('.list-group-item');
+        if (el) el.classList.remove('over');
     }
 
     function handleTaskDrop(e) {
         if (e.stopPropagation) {
             e.stopPropagation();
         }
+        
+        const targetEl = e.target.closest('.list-group-item');
+        if (!targetEl || !dragSrcEl) return false;
 
-        if (dragSrcEl !== this) {
+        if (dragSrcEl !== targetEl) {
             const srcId = dragSrcEl.dataset.id;
-            const targetId = this.dataset.id;
+            const targetId = targetEl.dataset.id;
 
             // Encontrar índices en el array original
-            const srcIndex = currentDayData.tasks.findIndex(t => t.id == srcId);
-            const targetIndex = currentDayData.tasks.findIndex(t => t.id == targetId);
+            const srcIndex = currentDayData.tasks.findIndex(t => String(t.id) === String(srcId));
+            const targetIndex = currentDayData.tasks.findIndex(t => String(t.id) === String(targetId));
 
             if (srcIndex >= 0 && targetIndex >= 0) {
                 // Mover elemento
@@ -380,7 +388,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleTaskDragEnd(e) {
-        this.classList.remove('dragging');
+        const el = e.target.closest('.list-group-item');
+        if (el) el.classList.remove('dragging');
         els.todoList.querySelectorAll('.list-group-item').forEach(item => {
             item.classList.remove('over');
         });
@@ -426,6 +435,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         els.emptyState.style.display = 'none';
 
+        const fragment = document.createDocumentFragment();
+
         visibleTasks.forEach(task => {
             const li = document.createElement('li');
             li.className = `list-group-item ${task.completed ? 'completed-task' : ''}`;
@@ -433,25 +444,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!isReadOnly) {
                 li.setAttribute('draggable', 'true');
-                li.addEventListener('dragstart', handleTaskDragStart);
-                li.addEventListener('dragenter', handleTaskDragEnter);
-                li.addEventListener('dragover', handleTaskDragOver);
-                li.addEventListener('dragleave', handleTaskDragLeave);
-                li.addEventListener('drop', handleTaskDrop);
-                li.addEventListener('dragend', handleTaskDragEnd);
                 li.style.cursor = 'grab';
             }
 
             // Permitir interacción con tareas incluso en días pasados
             const checkboxAttr = '';
             const actionStyle = '';
-            const deleteAction = `onclick="window.handleDelete(${task.id})"`;
-            const editAction = `onclick="window.handleEditTask(${task.id})"`;
+            // Event delegation used instead of inline onclick handlers
 
             let cats = taskCategoriesMap[task.id] || [];
             
-
-
             const uniqueCats = [];
             const seenCatIds = new Set();
             cats.forEach(c => {
@@ -466,26 +468,28 @@ document.addEventListener('DOMContentLoaded', () => {
             ).join('');
             
             const editButton = `
-                <button class="edit-btn p-0 me-2" ${editAction} style="${actionStyle}" title="Editar">
+                <button class="edit-btn p-0 me-2" data-action="edit" style="${actionStyle}" title="Editar">
                     <i class="bi bi-pencil"></i>
                 </button>
             `;
 
             li.innerHTML = `
                 <div class="d-flex align-items-center w-100">
-                    <input class="form-check-input rounded-circle" type="checkbox" ${task.completed ? 'checked' : ''} ${checkboxAttr} onchange="window.handleToggle(${task.id})">
+                    <input class="form-check-input rounded-circle" type="checkbox" data-action="toggle" ${task.completed ? 'checked' : ''} ${checkboxAttr}>
                     <div class="flex-grow-1 ms-2 d-flex align-items-center">
                         ${dots}
                         <span class="todo-text">${escapeHtml(task.text)}</span>
                     </div>
                     ${editButton}
-                    <button class="delete-btn" ${deleteAction} style="${actionStyle}" title="Eliminar">
+                    <button class="delete-btn" data-action="delete" style="${actionStyle}" title="Eliminar">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
             `;
-            els.todoList.appendChild(li);
+            fragment.appendChild(li);
         });
+        
+        els.todoList.appendChild(fragment);
     }
 
     function updateStats() {
@@ -603,7 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
             els.taskInput.value = '';
         } catch (e) {
             console.error("Error creando tarea:", e);
-            alert("No se pudo crear la tarea en el servidor.");
+            alert(e.message || "No se pudo crear la tarea en el servidor.");
         }
     }
 
@@ -702,6 +706,80 @@ document.addEventListener('DOMContentLoaded', () => {
         if (els.monthPdfBtn) {
             els.monthPdfBtn.addEventListener('click', generateMonthPdf);
         }
+
+        // Event Delegation for Wellness (Hydration & Sleep)
+        if (els.hydrationContainer) {
+            els.hydrationContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('.wellness-btn');
+                if (btn && btn.dataset.value) {
+                    handleHydrationClick(parseInt(btn.dataset.value));
+                }
+            });
+        }
+
+        if (els.sleepContainer) {
+            els.sleepContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('.wellness-btn');
+                if (btn && btn.dataset.value) {
+                    handleSleepClick(parseInt(btn.dataset.value));
+                }
+            });
+        }
+
+        // Event Delegation for Todo List Drag & Drop
+        els.todoList.addEventListener('dragstart', handleTaskDragStart);
+        els.todoList.addEventListener('dragenter', handleTaskDragEnter);
+        els.todoList.addEventListener('dragover', handleTaskDragOver);
+        els.todoList.addEventListener('dragleave', handleTaskDragLeave);
+        els.todoList.addEventListener('drop', handleTaskDrop);
+        els.todoList.addEventListener('dragend', handleTaskDragEnd);
+
+        // Event Delegation for Category Checkboxes in Task Modal
+        if (els.taskCategoriesContainer) {
+            els.taskCategoriesContainer.addEventListener('change', (e) => {
+                if (e.target.matches('input[type="checkbox"]')) {
+                    if (e.target.checked) {
+                        els.taskCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                            if (cb !== e.target) cb.checked = false;
+                        });
+                    }
+                }
+            });
+        }
+
+        // Event Delegation for Todo List Clicks
+        els.todoList.addEventListener('click', (e) => {
+            const target = e.target;
+            
+            // Delete Button
+            const deleteBtn = target.closest('[data-action="delete"]');
+            if (deleteBtn) {
+                const li = deleteBtn.closest('.list-group-item');
+                if (li && li.dataset.id) {
+                    handleDelete(li.dataset.id);
+                }
+                return;
+            }
+
+            // Edit Button
+            const editBtn = target.closest('[data-action="edit"]');
+            if (editBtn) {
+                const li = editBtn.closest('.list-group-item');
+                if (li && li.dataset.id) {
+                    handleEditTask(li.dataset.id);
+                }
+                return;
+            }
+
+            // Toggle Checkbox
+            if (target.type === 'checkbox' && target.dataset.action === 'toggle') {
+                const li = target.closest('.list-group-item');
+                if (li && li.dataset.id) {
+                    handleToggle(li.dataset.id);
+                }
+                return;
+            }
+        });
     }
 
     async function handleTaskSubmit(e) {
@@ -810,7 +888,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTasks(); // Re-renderizar después de cargar categorías
     }
 
-    window.handleToggle = async function(taskId) {
+    async function handleToggle(taskId) {
         const task = currentDayData.tasks.find(t => t.id === taskId);
         if (!task) return;
 
@@ -831,9 +909,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await saveCurrentDay();
         renderTasks();
-    };
+    }
 
-    window.handleDelete = function(taskId) {
+    function handleDelete(taskId) {
         const index = currentDayData.tasks.findIndex(t => t.id === taskId);
         if (index === -1) return;
 
@@ -845,7 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     await TaskApi.eliminar(removed.id);
                 } catch (e) {
                     console.error('Error eliminando tarea en backend:', e);
-                    alert('No se pudo eliminar la tarea en el servidor.');
+                    alert(e.message || 'No se pudo eliminar la tarea en el servidor.');
                     currentDayData.tasks.splice(index, 0, removed); 
                 }
             } else {
@@ -860,10 +938,10 @@ document.addEventListener('DOMContentLoaded', () => {
             await saveCurrentDay();
             renderTasks();
         });
-    };
+    }
 
-    window.handleEditTask = function(taskId) {
-        const task = currentDayData.tasks.find(t => t.id === taskId);
+    function handleEditTask(taskId) {
+        const task = currentDayData.tasks.find(t => String(t.id) === String(taskId));
         if (!task) return;
 
         els.taskIdInput.value = task.id;
@@ -882,16 +960,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `).join('');
 
-            els.taskCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    if (this.checked) {
-                        els.taskCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                            if (cb !== this) cb.checked = false;
-                        });
-                    }
-                });
-            });
-
             document.querySelector('#taskModal .modal-body .mb-3:nth-child(3)').style.display = 'block';
         } else {
              els.taskCategoriesContainer.innerHTML = '';
@@ -899,7 +967,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (taskModal) taskModal.show();
-    };
+    }
 
     init();
     

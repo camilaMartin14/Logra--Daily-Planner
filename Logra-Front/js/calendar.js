@@ -31,6 +31,28 @@ export class Calendar {
                 this.render();
             });
         }
+
+        if (this.grid) {
+            this.grid.addEventListener('click', (e) => this.handleGridClick(e));
+        }
+    }
+
+    handleGridClick(e) {
+        const cell = e.target.closest('.calendar-day');
+        if (!cell || cell.classList.contains('other-month')) return;
+
+        const day = parseInt(cell.dataset.day, 10);
+        if (isNaN(day)) return;
+
+        const year = this.viewDate.getFullYear();
+        const month = this.viewDate.getMonth();
+
+        this.currentDate = new Date(year, month, day);
+        this.render();
+        
+        if (this.onDateSelect) {
+            this.onDateSelect(this.currentDate);
+        }
     }
 
     setDate(date) {
@@ -109,14 +131,7 @@ export class Calendar {
                 el.classList.add('has-data');
             }
 
-            el.addEventListener('click', () => {
-                this.currentDate = new Date(year, month, i);
-                this.render();
-                // Notificar afuera
-                if (this.onDateSelect) {
-                    this.onDateSelect(this.currentDate);
-                }
-            });
+            el.dataset.day = i;
 
             this.grid.appendChild(el);
         }

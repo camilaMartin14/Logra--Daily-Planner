@@ -1,7 +1,7 @@
 import { NoteApi } from './noteApi.js';
 import { CategoryApi } from './categoryApi.js';
 import { authToken } from './api.js';
-import { showConfirmModal } from './ui.js';
+import { showConfirmModal, showToast, darkenColor } from './ui.js';
 
 let allNotes = [];
 let currentFilter = 'active'; 
@@ -117,8 +117,8 @@ function handleNoteDrop(e) {
         const srcId = dragSrcNoteEl.dataset.id;
         const targetId = this.dataset.id;
 
-        const srcIndex = allNotes.findIndex(n => n.id == srcId);
-        const targetIndex = allNotes.findIndex(n => n.id == targetId);
+        const srcIndex = allNotes.findIndex(n => String(n.id) === String(srcId));
+        const targetIndex = allNotes.findIndex(n => String(n.id) === String(targetId));
 
         if (srcIndex >= 0 && targetIndex >= 0) {
             const [movedNote] = allNotes.splice(srcIndex, 1);
@@ -127,7 +127,7 @@ function handleNoteDrop(e) {
             if (!authToken) {
                 const db = JSON.parse(localStorage.getItem('logra_notes') || '[]');
                 
-                const otherNotes = db.filter(n => !allNotes.some(an => an.id == n.id));
+                const otherNotes = db.filter(n => !allNotes.some(an => String(an.id) === String(n.id)));
                 const newDb = [...allNotes, ...otherNotes]; 
                 
                 localStorage.setItem('logra_notes', JSON.stringify(newDb));
@@ -158,7 +158,7 @@ function renderNotes() {
     const filtered = allNotes.filter(note => {
         const matchesSearch = note.title.toLowerCase().includes(searchTerm) || 
                               (note.content && note.content.toLowerCase().includes(searchTerm));
-        const matchesCategory = !catFilterId || note.categories.some(c => c.id == catFilterId);
+        const matchesCategory = !catFilterId || note.categories.some(c => String(c.id) === String(catFilterId));
         return matchesSearch && matchesCategory;
     });
 
@@ -166,6 +166,8 @@ function renderNotes() {
         notesListEl.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-journal-x fs-1 opacity-50"></i><p>No se encontraron notas.</p></div>';
         return;
     }
+
+    const fragment = document.createDocumentFragment();
 
     filtered.forEach(note => {
         const col = document.createElement('div');
@@ -223,10 +225,10 @@ function renderNotes() {
                                 <i class="bi bi-three-dots-vertical" style="font-size: 1rem;"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                <li><a class="dropdown-item btn-edit-note small" href="#" data-id="${note.id}"><i class="bi bi-pencil me-2"></i>Editar</a></li>
-                                <li><a class="dropdown-item btn-archive-note small" href="#" data-id="${note.id}"><i class="bi ${archiveIcon} me-2"></i>${archiveTitle}</a></li>
+                                <li><a class="dropdown-item btn-edit-note small" href="#" data-action="edit" data-id="${note.id}"><i class="bi bi-pencil me-2"></i>Editar</a></li>
+                                <li><a class="dropdown-item btn-archive-note small" href="#" data-action="archive" data-id="${note.id}"><i class="bi ${archiveIcon} me-2"></i>${archiveTitle}</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger btn-delete-note small" href="#" data-id="${note.id}"><i class="bi bi-trash me-2"></i>Eliminar</a></li>
+                                <li><a class="dropdown-item text-danger btn-delete-note small" href="#" data-action="delete" data-id="${note.id}"><i class="bi bi-trash me-2"></i>Eliminar</a></li>
                             </ul>
                         </div>
                     </div>
@@ -242,10 +244,10 @@ function renderNotes() {
                 </div>
             </div>
         `;
-        notesListEl.appendChild(col);
+        fragment.appendChild(col);
     });
 
-    attachNoteListeners();
+    notesListEl.appendChild(fragment);
 }
 
 function escapeHtml(text) {
@@ -255,20 +257,10 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function attachNoteListeners() {
-    document.querySelectorAll('.btn-edit-note').forEach(btn => {
-        btn.addEventListener('click', (e) => { e.preventDefault(); openEditNote(btn.dataset.id); });
-    });
-    document.querySelectorAll('.btn-archive-note').forEach(btn => {
-        btn.addEventListener('click', (e) => { e.preventDefault(); toggleArchiveNote(btn.dataset.id); });
-    });
-    document.querySelectorAll('.btn-delete-note').forEach(btn => {
-        btn.addEventListener('click', (e) => { e.preventDefault(); deleteNote(btn.dataset.id); });
-    });
-}
+
 
 function openEditNote(id) {
-    const note = allNotes.find(n => n.id == id);
+    const note = allNotes.find(n => String(n.id) === String(id));
     if (!note) return;
 
     noteIdInput.value = note.id;
@@ -278,7 +270,7 @@ function openEditNote(id) {
     
     const checkboxes = noteCategoriesContainer.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(cb => {
-        cb.checked = note.categories && note.categories.some(c => c.id == cb.value);
+        cb.checked = note.categories && note.categories.some(c => String(c.id) === String(cb.value));
     });
 
     noteModal.show();
@@ -287,7 +279,7 @@ function openEditNote(id) {
 async function toggleArchiveNote(id) {
     if (!authToken) {
         const db = JSON.parse(localStorage.getItem('logra_notes') || '[]');
-        const note = db.find(n => n.id == id);
+        const note = db.find(n => String(n.id) === String(id));
         if (note) {
             note.archived = !note.archived;
             localStorage.setItem('logra_notes', JSON.stringify(db));
@@ -304,7 +296,7 @@ async function toggleArchiveNote(id) {
         loadNotes();
     } catch (e) {
         console.error(e);
-        alert('Error al cambiar estado de archivo');
+        showToast('Error al cambiar estado de archivo', 'error');
     }
 }
 
@@ -312,7 +304,7 @@ async function deleteNote(id) {
     showConfirmModal('¿Eliminar esta nota permanentemente?', async () => {
         if (!authToken) {
             let db = JSON.parse(localStorage.getItem('logra_notes') || '[]');
-            db = db.filter(n => n.id != id);
+            db = db.filter(n => String(n.id) !== String(id));
             localStorage.setItem('logra_notes', JSON.stringify(db));
             loadNotes();
             return;
@@ -323,23 +315,35 @@ async function deleteNote(id) {
             loadNotes();
         } catch (e) {
             console.error(e);
-            alert('Error al eliminar nota');
+            showToast('Error al eliminar nota', 'error');
         }
     });
+}
+
+function handleCategoryCheckboxChange(e) {
+    const checkbox = e.target;
+    if (checkbox.checked) {
+        noteCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            if (cb !== checkbox) cb.checked = false;
+        });
+    }
 }
 
 function updateCategorySelectors(cats) {
     categories = cats;
     
     categoryFilter.innerHTML = '<option value="">Todas las categorías</option>';
+    const filterFragment = document.createDocumentFragment();
     cats.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
         opt.textContent = c.name;
-        categoryFilter.appendChild(opt);
+        filterFragment.appendChild(opt);
     });
+    categoryFilter.appendChild(filterFragment);
 
     noteCategoriesContainer.innerHTML = '';
+    const checkboxesFragment = document.createDocumentFragment();
     cats.forEach(c => {
         const div = document.createElement('div');
         div.className = 'form-check form-check-inline';
@@ -350,108 +354,146 @@ function updateCategorySelectors(cats) {
             </label>
         `;
         const checkbox = div.querySelector('input');
-        checkbox.addEventListener('change', function() {
-            if (this.checked) {
-                noteCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                    if (cb !== this) cb.checked = false;
-                });
-            }
-        });
-        noteCategoriesContainer.appendChild(div);
+        checkbox.addEventListener('change', handleCategoryCheckboxChange);
+        checkboxesFragment.appendChild(div);
     });
+    noteCategoriesContainer.appendChild(checkboxesFragment);
+}
+
+function setupNoteListDelegation() {
+    if (!notesListEl) return;
+    notesListEl.addEventListener('click', (e) => {
+        const target = e.target;
+        
+        // Edit
+        const editBtn = target.closest('.btn-edit-note') || target.closest('[data-action="edit"]');
+        if (editBtn) {
+            e.preventDefault();
+            const id = editBtn.dataset.id;
+            openEditNote(id);
+            return;
+        }
+
+        // Archive
+        const archiveBtn = target.closest('.btn-archive-note') || target.closest('[data-action="archive"]');
+        if (archiveBtn) {
+            e.preventDefault();
+            const id = archiveBtn.dataset.id;
+            toggleArchiveNote(id);
+            return;
+        }
+
+        // Delete
+        const deleteBtn = target.closest('.btn-delete-note') || target.closest('[data-action="delete"]');
+        if (deleteBtn) {
+            e.preventDefault();
+            const id = deleteBtn.dataset.id;
+            deleteNote(id);
+            return;
+        }
+    });
+}
+
+async function handleNoteSubmit(e) {
+    e.preventDefault();
+    const id = noteIdInput.value;
+    const data = {
+        title: noteTitleInput.value,
+        content: noteContentInput.value
+    };
+
+    const selectedIds = Array.from(noteCategoriesContainer.querySelectorAll('input:checked')).map(cb => parseInt(cb.value));
+    const selectedCats = categories.filter(c => selectedIds.includes(c.id));
+
+    if (!authToken) {
+        const db = JSON.parse(localStorage.getItem('logra_notes') || '[]');
+        if (id) {
+            const idx = db.findIndex(n => String(n.id) === String(id));
+            if (idx !== -1) {
+                db[idx] = { ...db[idx], ...data, categories: selectedCats, updated_at: new Date().toISOString() };
+            }
+        } else {
+            db.push({ id: Date.now(), created_at: new Date().toISOString(), ...data, categories: selectedCats, archived: false });
+        }
+        localStorage.setItem('logra_notes', JSON.stringify(db));
+        noteModal.hide();
+        await loadNotes();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+    }
+
+    try {
+        let noteId = id;
+        if (id) {
+            await NoteApi.update(id, data);
+        } else {
+            const res = await NoteApi.create(data);
+            noteId = res.id;
+        }
+
+        const selectedIds = Array.from(noteCategoriesContainer.querySelectorAll('input:checked')).map(cb => parseInt(cb.value));
+        
+
+        let existingIds = [];
+        if (id) {
+            const note = allNotes.find(n => String(n.id) === String(id));
+            if (note && note.categories) existingIds = note.categories.map(c => c.id);
+        }
+
+        const toAdd = selectedIds.filter(x => !existingIds.includes(x));
+        const toRemove = existingIds.filter(x => !selectedIds.includes(x));
+
+        for (const catId of toAdd) {
+            await NoteApi.addCategory(noteId, catId);
+        }
+        for (const catId of toRemove) {
+            await NoteApi.removeCategory(noteId, catId);
+        }
+
+        noteModal.hide();
+        await loadNotes();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+        console.error(err);
+        showToast('Error al guardar nota', 'error');
+    }
+}
+
+function openNewNoteModal() {
+    noteIdInput.value = '';
+    noteForm.reset();
+    noteModalTitle.textContent = 'Nueva Nota';
+    noteCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    noteModal.show();
+}
+
+function filterActiveNotes() {
+    currentFilter = 'active';
+    btnFilterActive.classList.add('active');
+    btnFilterArchived.classList.remove('active');
+    loadNotes();
+}
+
+function filterArchivedNotes() {
+    currentFilter = 'archived';
+    btnFilterArchived.classList.add('active');
+    btnFilterActive.classList.remove('active');
+    loadNotes();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     if (btnNewNote) {
+        setupNoteListDelegation();
         noteModal = new bootstrap.Modal(noteModalEl);
 
-        btnNewNote.addEventListener('click', () => {
-            noteIdInput.value = '';
-            noteForm.reset();
-            noteModalTitle.textContent = 'Nueva Nota';
-            noteCategoriesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-            noteModal.show();
-        });
+        btnNewNote.addEventListener('click', openNewNoteModal);
 
-        noteForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = noteIdInput.value;
-            const data = {
-                title: noteTitleInput.value,
-                content: noteContentInput.value
-            };
+        noteForm.addEventListener('submit', handleNoteSubmit);
 
-            const selectedIds = Array.from(noteCategoriesContainer.querySelectorAll('input:checked')).map(cb => parseInt(cb.value));
-            const selectedCats = categories.filter(c => selectedIds.includes(c.id));
+        btnFilterActive.addEventListener('click', filterActiveNotes);
 
-            if (!authToken) {
-                const db = JSON.parse(localStorage.getItem('logra_notes') || '[]');
-                if (id) {
-                    const idx = db.findIndex(n => n.id == id);
-                    if (idx !== -1) {
-                        db[idx] = { ...db[idx], ...data, categories: selectedCats, updated_at: new Date().toISOString() };
-                    }
-                } else {
-                    db.push({ id: Date.now(), created_at: new Date().toISOString(), ...data, categories: selectedCats, archived: false });
-                }
-                localStorage.setItem('logra_notes', JSON.stringify(db));
-                noteModal.hide();
-                await loadNotes();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            }
-
-            try {
-                let noteId = id;
-                if (id) {
-                    await NoteApi.update(id, data);
-                } else {
-                    const res = await NoteApi.create(data);
-                    noteId = res.id;
-                }
-
-                const selectedIds = Array.from(noteCategoriesContainer.querySelectorAll('input:checked')).map(cb => parseInt(cb.value));
-                
-
-                let existingIds = [];
-                if (id) {
-                    const note = allNotes.find(n => n.id == id);
-                    if (note && note.categories) existingIds = note.categories.map(c => c.id);
-                }
-
-                const toAdd = selectedIds.filter(x => !existingIds.includes(x));
-                const toRemove = existingIds.filter(x => !selectedIds.includes(x));
-
-                for (const catId of toAdd) {
-                    await NoteApi.addCategory(noteId, catId);
-                }
-                for (const catId of toRemove) {
-                    await NoteApi.removeCategory(noteId, catId);
-                }
-
-                noteModal.hide();
-                await loadNotes();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            } catch (err) {
-                console.error(err);
-                alert('Error al guardar nota');
-            }
-        });
-
-        btnFilterActive.addEventListener('click', () => {
-            currentFilter = 'active';
-            btnFilterActive.classList.add('active');
-            btnFilterArchived.classList.remove('active');
-            loadNotes();
-        });
-
-        btnFilterArchived.addEventListener('click', () => {
-            currentFilter = 'archived';
-            btnFilterArchived.classList.add('active');
-            btnFilterActive.classList.remove('active');
-            loadNotes();
-        });
+        btnFilterArchived.addEventListener('click', filterArchivedNotes);
 
         searchInput.addEventListener('input', renderNotes);
         categoryFilter.addEventListener('change', renderNotes);
@@ -464,24 +506,3 @@ document.addEventListener('DOMContentLoaded', () => {
         loadNotes();
     }
 });
-
-function darkenColor(color, percent) {
-    if (!color) return '#000000';
-    // Ensure 6 digit hex
-    if (color.length === 4) {
-        color = '#' + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
-    }
-    
-    let r = parseInt(color.substring(1, 3), 16);
-    let g = parseInt(color.substring(3, 5), 16);
-    let b = parseInt(color.substring(5, 7), 16);
-
-    r = Math.floor(r * (100 - percent) / 100);
-    g = Math.floor(g * (100 - percent) / 100);
-    b = Math.floor(b * (100 - percent) / 100);
-
-    return "#" + 
-        (r.toString(16).padStart(2, '0')) + 
-        (g.toString(16).padStart(2, '0')) + 
-        (b.toString(16).padStart(2, '0'));
-}

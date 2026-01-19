@@ -1,5 +1,6 @@
 import { CategoryApi } from './categoryApi.js';
 import { authToken } from './api.js';
+import { showToast, showConfirmModal } from './ui.js';
 
 let categories = [];
 const categoriesListEl = document.getElementById('categories-list');
@@ -50,12 +51,26 @@ function renderCategories() {
         `;
         categoriesListEl.appendChild(item);
     });
+}
 
-    document.querySelectorAll('.btn-edit-cat').forEach(btn => {
-        btn.addEventListener('click', () => openEditCategory(btn.dataset.id));
-    });
-    document.querySelectorAll('.btn-delete-cat').forEach(btn => {
-        btn.addEventListener('click', () => deleteCategory(btn.dataset.id));
+function setupCategoryDelegation() {
+    if (!categoriesListEl) return;
+    categoriesListEl.addEventListener('click', (e) => {
+        const target = e.target;
+        
+        const editBtn = target.closest('.btn-edit-cat');
+        if (editBtn) {
+            e.preventDefault();
+            openEditCategory(editBtn.dataset.id);
+            return;
+        }
+
+        const deleteBtn = target.closest('.btn-delete-cat');
+        if (deleteBtn) {
+            e.preventDefault();
+            deleteCategory(deleteBtn.dataset.id);
+            return;
+        }
     });
 }
 
@@ -67,7 +82,7 @@ function escapeHtml(text) {
 }
 
 function openEditCategory(id) {
-    const cat = categories.find(c => c.id == id);
+    const cat = categories.find(c => String(c.id) === String(id));
     if (!cat) return;
     
     categoryIdInput.value = cat.id;
@@ -78,71 +93,76 @@ function openEditCategory(id) {
 }
 
 async function deleteCategory(id) {
-    if (!confirm('¿Seguro que quieres eliminar esta categoría?')) return;
-    
+    showConfirmModal('¿Seguro que quieres eliminar esta categoría?', async () => {
+        if (!authToken) {
+            categories = categories.filter(c => String(c.id) !== String(id));
+            localStorage.setItem('logra_categories', JSON.stringify(categories));
+            loadCategories();
+            return;
+        }
+
+        try {
+            await CategoryApi.delete(id);
+            loadCategories();
+        } catch (e) {
+            console.error(e);
+            showToast('Error al eliminar categoría', 'error');
+        }
+    });
+}
+
+function openNewCategoryModal() {
+    categoryIdInput.value = '';
+    categoryForm.reset();
+    categoryModalTitle.textContent = 'Nueva Categoría';
+    categoryModal.show();
+}
+
+async function handleCategorySubmit(e) {
+    e.preventDefault();
+    const id = categoryIdInput.value;
+    const data = {
+        name: categoryNameInput.value,
+        color: categoryColorInput.value
+    };
+
     if (!authToken) {
-        categories = categories.filter(c => c.id != id);
+        if (id) {
+            const idx = categories.findIndex(c => String(c.id) === String(id));
+            if (idx !== -1) {
+                categories[idx] = { ...categories[idx], ...data };
+            }
+        } else {
+            categories.push({ id: Date.now(), ...data });
+        }
         localStorage.setItem('logra_categories', JSON.stringify(categories));
+        categoryModal.hide();
         loadCategories();
         return;
     }
 
     try {
-        await CategoryApi.delete(id);
+        if (id) {
+            await CategoryApi.update(id, data);
+        } else {
+            await CategoryApi.create(data);
+        }
+        categoryModal.hide();
         loadCategories();
-    } catch (e) {
-        console.error(e);
-        alert('Error al eliminar categoría');
+    } catch (err) {
+        console.error(err);
+        showToast('Error al guardar categoría', 'error');
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     if (btnNewCategory) {
+        setupCategoryDelegation();
         categoryModal = new bootstrap.Modal(categoryModalEl);
         
-        btnNewCategory.addEventListener('click', () => {
-            categoryIdInput.value = '';
-            categoryForm.reset();
-            categoryModalTitle.textContent = 'Nueva Categoría';
-            categoryModal.show();
-        });
+        btnNewCategory.addEventListener('click', openNewCategoryModal);
 
-        categoryForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = categoryIdInput.value;
-            const data = {
-                name: categoryNameInput.value,
-                color: categoryColorInput.value
-            };
-
-            if (!authToken) {
-                if (id) {
-                    const idx = categories.findIndex(c => c.id == id);
-                    if (idx !== -1) {
-                        categories[idx] = { ...categories[idx], ...data };
-                    }
-                } else {
-                    categories.push({ id: Date.now(), ...data });
-                }
-                localStorage.setItem('logra_categories', JSON.stringify(categories));
-                categoryModal.hide();
-                loadCategories();
-                return;
-            }
-
-            try {
-                if (id) {
-                    await CategoryApi.update(id, data);
-                } else {
-                    await CategoryApi.create(data);
-                }
-                categoryModal.hide();
-                loadCategories();
-            } catch (err) {
-                console.error(err);
-                alert('Error al guardar categoría');
-            }
-        });
+        categoryForm.addEventListener('submit', handleCategorySubmit);
         
         loadCategories();
     }

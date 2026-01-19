@@ -2,11 +2,24 @@ import { apiFetch } from './api.js';
 
 export const DayApi = {
     async getByDate(dateStr) {
+        return await apiFetch(`/days/date/${dateStr}`);
+    },
+
+    async create(dateStr) {
+        return await apiFetch('/days', {
+            method: 'POST',
+            body: JSON.stringify({ date: dateStr })
+        });
+    },
+
+    async obtenerOCrear(dateStr) {
         try {
-            return await apiFetch(`/days/date/${dateStr}`);
+            return await this.getByDate(dateStr);
         } catch (e) {
-            console.error("Error fetching day by date", e);
-            return await apiFetch(`/days/today`);
+            if (e.status === 404) {
+                return await this.create(dateStr);
+            }
+            throw e;
         }
     },
 

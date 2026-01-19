@@ -1,5 +1,5 @@
 import { apiFetch, setToken } from './api.js';
-import { showValidationError, clearValidationErrors, showValidationSuccess } from './ui.js';
+import { showValidationError, clearValidationErrors, showValidationSuccess, showToast } from './ui.js';
 
 async function login(email, password) {
     const result = await apiFetch('/auth/login', {
@@ -45,9 +45,7 @@ if (loginForm) {
         if (!isValid) return;
 
         try {
-            console.log('Attempting login for:', email);
             const usuario = await login(email, password);
-            console.log('Login success:', usuario);
 
             if (usuario && usuario.firstName) {
                 localStorage.setItem('logra_user_name', usuario.firstName);
@@ -61,26 +59,35 @@ if (loginForm) {
             }, 1500);
         } catch (err) {
             console.error('Login error:', err);
-            alert(err.message);
+            showToast(err.message, 'error');
         }
     });
 }
 
 
-window.togglePassword = function(inputId) {
-    const input = document.getElementById(inputId);
-    const icon = document.querySelector(`button[onclick="togglePassword('${inputId}')"] i`);
-    
-    if (input.type === "password") {
-        input.type = "text";
-        icon.classList.remove("bi-eye");
-        icon.classList.add("bi-eye-slash");
-    } else {
-        input.type = "password";
-        icon.classList.remove("bi-eye-slash");
-        icon.classList.add("bi-eye");
-    }
-};
+function setupPasswordToggles() {
+    document.querySelectorAll('.toggle-password-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const inputId = btn.dataset.target;
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+            }
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupPasswordToggles();
+});
 
 
 const registerForm = document.getElementById('registerForm');
@@ -146,7 +153,7 @@ if (registerForm) {
             }, 2000);
         } catch (err) {
             console.error('Register error:', err);
-            alert(err.message);
+            showToast(err.message, 'error');
         }
     });
 }
